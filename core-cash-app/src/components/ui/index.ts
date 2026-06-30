@@ -1,5 +1,6 @@
 export * from "./Badge";
 export * from "./Button";
+export * from "./Input";
 export * from "./PulseDot";
 export * from "./MetricCard";
 export * from "./SectionCard";
