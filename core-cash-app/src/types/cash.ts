@@ -81,6 +81,7 @@ export interface DashboardData {
   liquidityStatus: RiskLevel;
   liquidityHeadline: string;
   cashRunwayDays: number;
+  cashRunwayDeltaDays: number;
   sevenDayForecastUsd: number;
   openExceptionsCount: number;
   currencyBreakdown: CurrencyBreakdown[];
@@ -88,6 +89,11 @@ export interface DashboardData {
   recommendation: Recommendation;
   exceptions: Exception[];
   riskScore: number;
+  riskScoreDelta: string;
+  activeBreaches: number;
+  activeBreachesLabel: string;
+  concentrationRiskLevel: "Low" | "Medium" | "High";
+  concentrationRiskSub: string;
   riskItems: RiskItem[];
   thresholdMonitoring: ThresholdMonitorRow[];
 }

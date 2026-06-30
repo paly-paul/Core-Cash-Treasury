@@ -13,6 +13,7 @@ export const mockDashboardData: DashboardData = {
   liquidityHeadline:
     "You have 47 days of cash at current burn rate. No shortfalls in 7-day window. GBP pool has £2.1M surplus available for deployment.",
   cashRunwayDays: 47,
+  cashRunwayDeltaDays: 2,
   sevenDayForecastUsd: 9_100_000,
   openExceptionsCount: 3,
   currencyBreakdown: [
@@ -176,6 +177,11 @@ export const mockDashboardData: DashboardData = {
     },
   ],
   riskScore: 2,
+  riskScoreDelta: "▲ Improved from 3",
+  activeBreaches: 1,
+  activeBreachesLabel: "BofA EUR Reserve",
+  concentrationRiskLevel: "Low",
+  concentrationRiskSub: "USD 67% · GBP 24%",
   riskItems: [
     {
       id: "risk-1",
