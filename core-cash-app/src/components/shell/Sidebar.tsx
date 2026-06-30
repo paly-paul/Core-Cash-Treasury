@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
 import { toggleSidebar } from "@/store/uiSlice";
+import { SidebarNavItem } from "@/components/ui/SidebarNavItem";
 import { NAV_SECTIONS } from "./navConfig";
 
 export function Sidebar() {
@@ -38,30 +38,15 @@ export function Sidebar() {
           {section.items.map((item) => {
             const active = pathname === item.href || pathname.startsWith(item.href.split("#")[0] + "/");
             return (
-              <Link
+              <SidebarNavItem
                 key={item.label}
                 href={item.href}
-                className={`group relative mx-1.5 flex items-center gap-2 rounded-r-[5px] border-l-[3px] px-3 py-1.5 text-[13px] transition-colors ${
-                  collapsed ? "justify-center px-0 py-2" : "pl-3"
-                } ${
-                  active
-                    ? "border-l-blue bg-blue-light font-semibold text-blue"
-                    : "border-l-transparent text-text-2 hover:bg-bg-hover hover:text-text-1"
-                }`}
-              >
-                <span className="w-[18px] flex-shrink-0 text-center text-sm opacity-80">{item.icon}</span>
-                {!collapsed && <span className="flex-1">{item.label}</span>}
-                {!collapsed && item.badge && (
-                  <span className="rounded-full bg-red px-1.5 font-data text-[10px] font-bold text-white">
-                    {item.badge}
-                  </span>
-                )}
-                {collapsed && (
-                  <span className="pointer-events-none absolute left-[calc(100%+10px)] top-1/2 z-[80] -translate-y-1/2 translate-x-[-4px] whitespace-nowrap rounded-[5px] bg-text-1 px-2.5 py-1.5 text-[11.5px] font-medium text-white opacity-0 shadow-[var(--shadow-elevated)] transition-all group-hover:translate-x-0 group-hover:opacity-100">
-                    {item.label}
-                  </span>
-                )}
-              </Link>
+                icon={item.icon}
+                label={item.label}
+                badge={item.badge}
+                active={active}
+                collapsed={collapsed}
+              />
             );
           })}
         </div>

@@ -5,3 +5,7 @@ export * from "./MetricCard";
 export * from "./SectionCard";
 export * from "./StatusCard";
 export * from "./RecommendationCard";
+export * from "./Table";
+export * from "./Modal";
+export * from "./Toast";
+export * from "./SidebarNavItem";
