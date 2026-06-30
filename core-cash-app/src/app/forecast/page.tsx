@@ -1,16 +1,21 @@
 "use client";
 
+import { useState } from "react";
 import { AppShell } from "@/components/shell/AppShell";
 import { Button } from "@/components/ui/Button";
 import { MetricCard } from "@/components/ui/MetricCard";
 import { SectionCard } from "@/components/ui/SectionCard";
+import { useToast } from "@/components/ui/Toast";
 import { ExceptionsPanel } from "../dashboard/_components/ExceptionsPanel";
 import { ForecastChart } from "./_components/ForecastChart";
+import { WaterfallChart } from "./_components/WaterfallChart";
 import { EntityForecastTable } from "./_components/EntityForecastTable";
 import { AssumptionsList } from "./_components/AssumptionsList";
+import { AssumptionFormModal } from "./_components/AssumptionFormModal";
 import { VarianceAnalysis } from "./_components/VarianceAnalysis";
+import { ForecastHeader } from "./_components/ForecastHeader";
 import { useAppDispatch, useAppSelector } from "@/hooks/redux";
-import { setActiveHorizon, setChartView } from "@/store/forecastSlice";
+import { addAssumption, setActiveHorizon, setChartView } from "@/store/forecastSlice";
 import { formatCompactCurrency } from "@/utils/format";
 import type { ForecastHorizon } from "@/types/cash";
 
@@ -19,12 +24,16 @@ const CHART_VIEWS = ["bar", "line", "waterfall"] as const;
 
 export default function ForecastPage() {
   const dispatch = useAppDispatch();
+  const { showToast } = useToast();
   const data = useAppSelector((s) => s.forecast.data);
   const dashboardExceptions = useAppSelector((s) => s.dashboard.data.exceptions);
   const activeHorizon = useAppSelector((s) => s.forecast.activeHorizon);
   const chartView = useAppSelector((s) => s.forecast.chartView);
+  const [addModalOpen, setAddModalOpen] = useState(false);
 
   const activeSummary = data.horizons.find((h) => h.horizon === activeHorizon)!;
+  const sevenDayClose = data.horizons.find((h) => h.horizon === 7)!.closingBalance;
+  const thirtyDayLow = Math.min(...data.series[30].map((p) => p.balance));
 
   return (
     <AppShell
@@ -40,28 +49,45 @@ export default function ForecastPage() {
       ]}
       aiPanelPrimaryView={{ label: "Exceptions", content: <ExceptionsPanel exceptions={dashboardExceptions} /> }}
       stats={[
-        { label: "Opening Cash", value: formatCompactCurrency(data.openingCash, "USD") },
-        { label: "Expected Inflows", value: formatCompactCurrency(data.expectedInflows, "USD"), tone: "positive" },
-        { label: "Expected Outflows", value: formatCompactCurrency(data.expectedOutflows, "USD") },
+        { label: "Total Cash", value: formatCompactCurrency(data.totalCashUsd, "USD") },
+        { label: "7-Day Close", value: formatCompactCurrency(sevenDayClose, "USD") },
+        { label: "30-Day Low", value: formatCompactCurrency(thirtyDayLow, "USD"), tone: "warning" },
+        { label: "Forecast Conf.", value: data.forecastConfidence.toUpperCase() },
       ]}
     >
-      {data.lowPointWarning && (
+      <ForecastHeader asOf={data.asOf} onAddAssumption={() => setAddModalOpen(true)} />
+
+      {activeSummary.lowPointWarning && (
         <div className="flex items-center gap-3 rounded-md border border-amber/25 bg-amber-light px-[18px] py-3.5 text-[12.5px] text-text-2 shadow-[var(--shadow-card)]">
           <span className="text-base font-bold text-amber">⚠</span>
-          <span>{data.lowPointWarning}</span>
+          <span>{activeSummary.lowPointWarning}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-        {data.horizons.map((h) => (
-          <MetricCard
-            key={h.horizon}
-            label={`${h.horizon}-Day Closing Balance`}
-            value={formatCompactCurrency(h.closingBalance, "USD")}
-            accent={h.trend === "improving" ? "green" : h.trend === "watch" ? "amber" : "blue"}
-            sub={h.trendLabel}
-          />
-        ))}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-4">
+        <MetricCard label="Opening Cash" value={formatCompactCurrency(activeSummary.openingCash, "USD")} accent="blue" sub={activeSummary.openingNote} />
+        <MetricCard
+          label="Expected Inflows"
+          value={formatCompactCurrency(activeSummary.inflows, "USD")}
+          accent="green"
+          sub={activeSummary.inflowSub}
+          delta={activeSummary.inflowNote}
+          deltaDirection="up"
+        />
+        <MetricCard
+          label="Expected Outflows"
+          value={formatCompactCurrency(activeSummary.outflows, "USD")}
+          accent="red"
+          sub={activeSummary.outflowSub}
+          delta={activeSummary.outflowNote}
+          deltaDirection="down"
+        />
+        <MetricCard
+          label="Forecast Closing"
+          value={formatCompactCurrency(activeSummary.closingBalance, "USD")}
+          accent={activeSummary.trend === "improving" ? "green" : activeSummary.trend === "watch" ? "amber" : "blue"}
+          sub={activeSummary.trendLabel}
+        />
       </div>
 
       <SectionCard
@@ -78,9 +104,7 @@ export default function ForecastPage() {
                 {h}D
               </button>
             ))}
-            <span className="ml-2 text-[11px] font-normal text-text-muted">
-              {activeSummary.trendLabel}
-            </span>
+            <span className="ml-2 text-[11px] font-normal text-text-muted">{activeSummary.trendLabel}</span>
           </div>
         }
         action={
@@ -98,10 +122,20 @@ export default function ForecastPage() {
           </div>
         }
       >
-        <ForecastChart series={data.series[activeHorizon]} view={chartView} />
+        {chartView === "waterfall" ? (
+          <WaterfallChart
+            horizonLabel={`${activeHorizon}D`}
+            openingCash={activeSummary.openingCash}
+            inflows={activeSummary.inflows}
+            outflows={activeSummary.outflows}
+            closingBalance={activeSummary.closingBalance}
+          />
+        ) : (
+          <ForecastChart series={data.series[activeHorizon]} view={chartView} />
+        )}
       </SectionCard>
 
-      <EntityForecastTable rows={data.entityRows} />
+      <EntityForecastTable rows={data.entityRows[activeHorizon]} />
 
       <AssumptionsList assumptions={data.assumptions} />
 
@@ -112,6 +146,15 @@ export default function ForecastPage() {
         outflowVariance={data.outflowVariance}
         explainedDriverCount={data.explainedDriverCount}
         drivers={data.varianceDrivers}
+      />
+
+      <AssumptionFormModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onSubmit={(input) => {
+          dispatch(addAssumption(input));
+          showToast({ title: "Assumption added", message: input.description, type: "success" });
+        }}
       />
     </AppShell>
   );

@@ -14,13 +14,7 @@ import {
 import type { ForecastPoint } from "@/types/cash";
 import { formatCompactCurrency, formatFullCurrency } from "@/utils/format";
 
-export function ForecastChart({
-  series,
-  view,
-}: {
-  series: ForecastPoint[];
-  view: "bar" | "line" | "waterfall";
-}) {
+export function ForecastChart({ series, view }: { series: ForecastPoint[]; view: "bar" | "line" }) {
   const data = series.map((p) => ({ ...p }));
 
   return (

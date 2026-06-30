@@ -108,9 +108,19 @@ export interface ForecastPoint {
 
 export interface ForecastHorizonSummary {
   horizon: ForecastHorizon;
+  openingCash: number;
+  openingNote: string;
+  inflows: number;
+  inflowNote: string;
+  inflowSub: string;
+  outflows: number;
+  outflowNote: string;
+  outflowSub: string;
   closingBalance: number;
+  closingConfidence: ConfidenceLevel;
   trend: "improving" | "watch" | "stable";
   trendLabel: string;
+  lowPointWarning?: string;
 }
 
 export interface ForecastEntityRow {
@@ -150,13 +160,12 @@ export interface VarianceDriver {
 export interface ForecastData {
   version: string;
   asOf: string;
-  openingCash: number;
-  expectedInflows: number;
-  expectedOutflows: number;
-  lowPointWarning: string | null;
+  totalCashUsd: number;
+  forecastConfidence: ConfidenceLevel;
+  assumptionsCount: number;
   horizons: ForecastHorizonSummary[];
   series: Record<ForecastHorizon, ForecastPoint[]>;
-  entityRows: ForecastEntityRow[];
+  entityRows: Record<ForecastHorizon, ForecastEntityRow[]>;
   assumptions: Assumption[];
   varianceWindowLabel: string;
   totalVariance: number;
@@ -164,4 +173,15 @@ export interface ForecastData {
   outflowVariance: number;
   explainedDriverCount: number;
   varianceDrivers: VarianceDriver[];
+}
+
+export interface NewAssumptionInput {
+  entity: string;
+  type: "inflow" | "outflow";
+  amount: number;
+  currency: Currency;
+  description: string;
+  date: string;
+  category: string;
+  confidence: ConfidenceLevel;
 }
