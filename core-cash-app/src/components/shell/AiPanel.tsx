@@ -10,16 +10,19 @@ interface ChatMessage {
   role: "agent" | "user";
   text: string;
   time: string;
+  content?: ReactNode;
 }
 
 export function AiPanel({
   title,
   initialMessages,
   primaryView,
+  suggestedPrompts,
 }: {
   title: string;
   initialMessages: ChatMessage[];
   primaryView?: { label: string; content: ReactNode };
+  suggestedPrompts?: { label: string; message: string }[];
 }) {
   const dispatch = useAppDispatch();
   const collapsed = useAppSelector((s) => s.ui.aiPanelCollapsed);
@@ -27,11 +30,12 @@ export function AiPanel({
   const [messages, setMessages] = useState(initialMessages);
   const [draft, setDraft] = useState("");
 
-  function send() {
-    if (!draft.trim()) return;
+  function send(text?: string) {
+    const content = text ?? draft;
+    if (!content.trim()) return;
     setMessages((m) => [
       ...m,
-      { id: crypto.randomUUID(), role: "user", text: draft, time: nowTime() },
+      { id: crypto.randomUUID(), role: "user", text: content, time: nowTime() },
     ]);
     setDraft("");
     setTimeout(() => {
@@ -49,7 +53,7 @@ export function AiPanel({
 
   return (
     <aside
-      className={`flex flex-shrink-0 flex-col overflow-hidden border-l border-border-0 bg-bg-surface transition-[width] duration-200 ease-in-out ${
+      className={`print:hidden flex flex-shrink-0 flex-col overflow-hidden border-l border-border-0 bg-bg-surface transition-[width] duration-200 ease-in-out ${
         collapsed ? "w-9" : "w-[356px]"
       }`}
     >
@@ -95,20 +99,35 @@ export function AiPanel({
           <div className="flex-1 overflow-y-auto bg-bg-base p-4 flex flex-col gap-3.5">
             {messages.map((m) => (
               <div key={m.id} className={`flex flex-col gap-1 ${m.role === "user" ? "items-end" : "items-start"}`}>
-                <div
-                  className={`max-w-[92%] rounded-[9px] px-3.5 py-2 text-[12.5px] leading-relaxed ${
-                    m.role === "user"
-                      ? "rounded-br-[2px] bg-blue text-white"
-                      : "rounded-bl-[2px] border border-border-0 bg-bg-surface text-text-1 shadow-[var(--shadow-card)]"
-                  }`}
-                >
-                  {m.text}
-                </div>
+                {m.content ?? (
+                  <div
+                    className={`max-w-[92%] rounded-[9px] px-3.5 py-2 text-[12.5px] leading-relaxed ${
+                      m.role === "user"
+                        ? "rounded-br-[2px] bg-blue text-white"
+                        : "rounded-bl-[2px] border border-border-0 bg-bg-surface text-text-1 shadow-[var(--shadow-card)]"
+                    }`}
+                  >
+                    {m.text}
+                  </div>
+                )}
                 <span className="px-0.5 font-data text-[10px] text-text-muted">{m.time}</span>
               </div>
             ))}
           </div>
           <div className="flex flex-col gap-2 border-t border-border-0 bg-bg-surface p-3.5">
+            {suggestedPrompts && suggestedPrompts.length > 0 && (
+              <div className="flex flex-wrap gap-1.5">
+                {suggestedPrompts.map((p) => (
+                  <button
+                    key={p.label}
+                    onClick={() => send(p.message)}
+                    className="rounded-[5px] border border-border-1 px-2 py-1 text-[10px] text-text-2 hover:border-blue hover:text-blue"
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+            )}
             <div className="flex items-end gap-1.5">
               <textarea
                 value={draft}
@@ -124,7 +143,7 @@ export function AiPanel({
                 className="min-h-9 max-h-20 flex-1 resize-none rounded-[9px] border border-border-1 bg-bg-elevated px-3 py-2 text-[12.5px] text-text-1 outline-none focus:border-blue focus:shadow-[0_0_0_3px_rgba(0,87,217,.1)]"
               />
               <button
-                onClick={send}
+                onClick={() => send()}
                 className="flex h-[34px] w-[34px] flex-shrink-0 items-center justify-center rounded-[5px] bg-blue text-white hover:bg-[#004BBD]"
               >
                 ↑

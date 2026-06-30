@@ -274,3 +274,78 @@ export interface UploadsData {
   columnMapping: ColumnMappingState;
   accounts: AccountMasterRow[];
 }
+
+export interface InsightCard {
+  id: string;
+  label: string;
+  value: string;
+  badge: { tone: "green" | "amber" | "red" | "blue" | "muted"; label: string };
+  delta: string;
+  sub: string;
+}
+
+export interface CashTrendPoint {
+  label: string;
+  date: string;
+  amountUsd: number;
+}
+
+export interface CfoActionItem {
+  id: string;
+  num: number;
+  severity: "urgent" | "normal";
+  title: string;
+  what: string;
+  why: string;
+  when: string;
+  approvalOwner: string;
+  badgeLabel: string;
+}
+
+export interface CfoReportStat {
+  label: string;
+  value: string;
+}
+
+export interface CfoReportRow {
+  label: string;
+  value: string;
+  flagged?: boolean;
+}
+
+export interface CfoSourceReference {
+  label: string;
+  detail: string;
+}
+
+export interface CfoReportSections {
+  executiveSummary: string;
+  cashPosition: CfoReportRow[];
+  forecastOutlook: CfoReportRow[];
+  actionsRequired: CfoActionItem[];
+  varianceExplanation: { windowLabel: string; text: string };
+  dataCaveats: string;
+  sourceReferences: CfoSourceReference[];
+}
+
+export interface CfoSuggestedPrompt {
+  label: string;
+  message: string;
+}
+
+export interface CfoData {
+  asOf: string;
+  reportDate: string;
+  forecastVersion: string;
+  agentRunTime: string;
+  confidence: ConfidenceLevel;
+  totalCashUsd: number;
+  liquidityStatus: RiskLevel;
+  mgmtAttentionCount: number;
+  insights: InsightCard[];
+  cashTrend: CashTrendPoint[];
+  coverStats: CfoReportStat[];
+  sections: CfoReportSections;
+  miniBarTrend: { label: string; heightPct: number; tag?: string; good?: boolean }[];
+  suggestedPrompts: CfoSuggestedPrompt[];
+}

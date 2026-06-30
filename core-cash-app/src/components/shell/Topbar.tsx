@@ -14,7 +14,7 @@ const TONE_CLASSES: Record<NonNullable<TopbarStat["tone"]>, string> = {
 
 export function Topbar({ stats, asOf }: { stats: TopbarStat[]; asOf: string }) {
   return (
-    <header className="z-50 col-span-full flex h-[54px] items-center border-b border-border-0 bg-bg-surface px-5">
+    <header className="print:hidden z-50 col-span-full flex h-[54px] items-center border-b border-border-0 bg-bg-surface px-5">
       <Link href="/dashboard" className="flex items-center gap-2.5 whitespace-nowrap pr-5 text-[13px] font-bold text-text-1">
         <span className="flex h-[30px] w-[30px] flex-shrink-0 items-center justify-center rounded-[7px] bg-blue font-data text-[11px] font-bold text-white">
           CC

@@ -29,7 +29,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     label: "Reports",
     items: [
-      { label: "CFO Summary", href: "/cfo", icon: "□" },
+      { label: "CFO Summary", href: "/cfo-summary", icon: "□" },
       { label: "Daily Briefing", href: "/briefing", icon: "☀" },
       { label: "Trends & History", href: "/trends", icon: "⟴" },
     ],
