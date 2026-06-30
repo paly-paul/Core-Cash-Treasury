@@ -1,0 +1,1615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Core Cash Agent</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+:root{
+  --bg:#F4F6FA;--sur:#FFF;--elv:#F8F9FC;--hov:#EEF1F7;
+  --blue:#0057D9;--blue-lt:#EBF2FF;--blue-bd:rgba(0,87,217,.2);
+  --green:#059669;--green-lt:#ECFDF5;--green-bd:rgba(5,150,105,.2);
+  --amber:#D97706;--amber-lt:#FFFBEB;--amber-bd:rgba(217,119,6,.22);
+  --red:#DC2626;--red-lt:#FEF2F2;--red-bd:rgba(220,38,38,.2);
+  --info:#0369A1;--info-lt:#F0F9FF;
+  --t1:#0F1728;--t2:#4B5675;--tm:#9AA3B5;
+  --b0:#E8ECF4;--b1:#D1D9EC;
+  --ui:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+  --rsm:5px;--rmd:9px;--rlg:14px;
+  --shc:0 1px 3px rgba(15,23,40,.07),0 0 0 1px var(--b0);
+  --she:0 4px 16px rgba(15,23,40,.1),0 0 0 1px var(--b0);
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;}
+body{background:var(--bg);color:var(--t1);font-family:var(--ui);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+::-webkit-scrollbar{width:5px;height:5px;}::-webkit-scrollbar-track{background:var(--bg);}::-webkit-scrollbar-thumb{background:var(--b1);border-radius:3px;}
+
+/* SPA */
+.pg{display:none;}
+
+/* Shell */
+.shell{display:grid;grid-template-rows:54px 1fr;grid-template-columns:220px 1fr;height:100vh;transition:grid-template-columns .22s ease;}
+.shell.panel{grid-template-columns:220px 1fr 356px;transition:grid-template-columns .22s ease;}
+.shell.sb-collapsed{grid-template-columns:52px 1fr;}
+.shell.sb-collapsed.panel{grid-template-columns:52px 1fr 356px;}
+.shell.panel-collapsed{grid-template-columns:220px 1fr 36px;}
+.shell.sb-collapsed.panel-collapsed{grid-template-columns:52px 1fr 36px;}
+
+/* Topbar */
+.topbar{grid-column:1/-1;background:var(--sur);border-bottom:1px solid var(--b0);display:flex;align-items:center;padding:0 20px;z-index:50;}
+.t-logo{display:flex;align-items:center;gap:10px;font-weight:700;font-size:13px;color:var(--t1);padding-right:20px;cursor:pointer;white-space:nowrap;}
+.logo-mark{width:30px;height:30px;background:var(--blue);border-radius:7px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px;color:#fff;font-family:var(--mono);flex-shrink:0;}
+.t-stats{flex:1;display:flex;align-items:center;border-left:1px solid var(--b0);}
+.tst{display:flex;flex-direction:column;padding:0 18px;border-right:1px solid var(--b0);}
+.tst-l{font-size:10px;font-weight:600;letter-spacing:.07em;text-transform:uppercase;color:var(--tm);}
+.tst-v{font-family:var(--mono);font-size:13px;font-weight:600;color:var(--t1);margin-top:1px;}
+.tst-v.pos{color:var(--green);}.tst-v.warn{color:var(--amber);}
+.t-right{display:flex;align-items:center;gap:10px;margin-left:auto;}
+.as-of{font-size:11px;color:var(--tm);font-family:var(--mono);}
+.avatar{width:30px;height:30px;border-radius:50%;background:var(--blue-lt);border:1.5px solid var(--blue-bd);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--blue);cursor:pointer;}
+.btn-icon{width:32px;height:32px;border-radius:var(--rsm);border:1px solid var(--b1);background:var(--sur);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;}
+.btn-icon:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-lt);}
+
+/* Sidebar */
+.sidebar{background:var(--sur);border-right:1px solid var(--b0);overflow-y:auto;overflow-x:visible;padding:14px 0;display:flex;flex-direction:column;gap:2px;transition:width .22s ease;position:relative;width:220px;flex-shrink:0;}
+.sidebar.collapsed{width:52px;overflow:visible;}
+.sidebar.collapsed .nav-sec,.sidebar.collapsed .sb-footer,.sidebar.collapsed .nav-badge,.sidebar.collapsed .sb-toggle-label{display:none;}
+.sidebar.collapsed .nav-item{justify-content:center;padding:9px 0;margin:0 4px;position:relative;}
+.sidebar.collapsed .nav-icon{font-size:16px;width:auto;opacity:.85;}
+.sidebar.collapsed .nav-item:hover .nav-icon{opacity:1;}
+.sidebar.collapsed .nav-item.active .nav-icon{opacity:1;}
+.sidebar.collapsed .nav-item .nav-label,.sidebar.collapsed .nav-item .nav-badge{display:none;}
+.sb-toggle{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 4px;cursor:pointer;color:var(--tm);font-size:11px;font-weight:600;letter-spacing:.04em;}
+.sb-toggle:hover{color:var(--t1);}
+.sb-toggle-icon{font-size:16px;transition:transform .22s;flex-shrink:0;}
+.sidebar.collapsed .sb-toggle{justify-content:center;padding:8px 0;}
+.sidebar.collapsed .sb-toggle-icon{transform:rotate(180deg);}
+.nav-sec{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--tm);padding:14px 16px 5px;}
+
+/* Collapsed sidebar tooltips */
+.nav-tip{position:absolute;left:calc(100% + 10px);top:50%;transform:translateY(-50%) translateX(-4px);background:var(--t1);color:#fff;font-size:11.5px;font-weight:500;padding:6px 11px;border-radius:var(--rsm);white-space:nowrap;box-shadow:var(--she);opacity:0;pointer-events:none;transition:opacity .14s ease,transform .14s ease;z-index:80;}
+.nav-tip::before{content:'';position:absolute;left:-4px;top:50%;transform:translateY(-50%);width:7px;height:7px;background:var(--t1);transform:translateY(-50%) rotate(45deg);}
+.sidebar.collapsed .nav-item:hover .nav-tip{opacity:1;transform:translateY(-50%) translateX(0);}
+.sidebar:not(.collapsed) .nav-tip{display:none;}
+
+.nav-item{display:flex;align-items:center;gap:9px;padding:7px 14px 7px 12px;cursor:pointer;color:var(--t2);font-size:13px;border-left:3px solid transparent;transition:all .12s;margin:0 6px;border-radius:0 var(--rsm) var(--rsm) 0;}
+.nav-item:hover{color:var(--t1);background:var(--hov);}
+.nav-item.active{color:var(--blue);border-left-color:var(--blue);background:var(--blue-lt);font-weight:600;}
+.nav-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0;opacity:.7;}
+.nav-item.active .nav-icon{opacity:1;}
+.nav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 6px;font-family:var(--mono);}
+.sb-footer{margin:14px 12px;padding:12px;background:var(--elv);border:1px solid var(--b0);border-radius:var(--rmd);}
+.sb-footer-lbl{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tm);margin-bottom:8px;}
+.sb-row{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--b0);}
+.sb-row:last-child{border-bottom:none;}
+.sb-n{font-size:11px;color:var(--t2);}.sb-v{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--t1);}
+
+/* Main */
+.main{background:var(--bg);overflow-y:auto;overflow-x:hidden;padding:20px 22px;display:flex;flex-direction:column;gap:16px;min-height:0;}
+
+/* AI Panel */
+.ai-panel{background:var(--sur);border-left:1px solid var(--b0);display:flex;flex-direction:column;overflow:hidden;min-height:0;transition:width .22s ease;width:356px;flex-shrink:0;}
+.ai-panel.collapsed{width:36px;overflow:hidden;}
+.ai-panel.collapsed .chat-msgs,.ai-panel.collapsed .chat-inp-wrap,.ai-panel.collapsed .panel-title,.ai-panel.collapsed .exc-item,.ai-panel.collapsed #dash-exc,.ai-panel.collapsed #dash-chat,.ai-panel.collapsed #fc-msgs,.ai-panel.collapsed #cfo-msgs{display:none!important;}
+.panel-collapse-btn{width:24px;height:24px;border-radius:var(--rsm);border:none;background:transparent;color:var(--tm);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;transition:color .12s;}
+.panel-collapse-btn:hover{color:var(--blue);}
+.ai-panel.collapsed .panel-hdr{flex-direction:column;padding:12px 0;gap:12px;justify-content:center;align-items:center;}
+.ai-panel.collapsed .panel-collapse-btn{transform:rotate(180deg);}
+.panel-hdr{padding:13px 16px;border-bottom:1px solid var(--b0);display:flex;align-items:center;gap:9px;background:var(--elv);}
+.panel-title{font-size:12px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--t2);}
+
+/* Pulse */
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 2.4s ease-in-out infinite;}
+@keyframes pulse{0%,100%{opacity:1;box-shadow:0 0 0 0 rgba(5,150,105,.35);}50%{opacity:.75;box-shadow:0 0 0 5px transparent;}}
+
+/* Chat */
+.chat-msgs{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px;background:var(--bg);}
+.cmsg{display:flex;flex-direction:column;gap:4px;}
+.cmsg.user{align-items:flex-end;}.cmsg.agent{align-items:flex-start;}
+.cbubble{padding:9px 13px;border-radius:var(--rmd);font-size:12.5px;line-height:1.65;max-width:92%;}
+.cmsg.user .cbubble{background:var(--blue);color:#fff;border-radius:var(--rmd) var(--rmd) 2px var(--rmd);}
+.cmsg.agent .cbubble{background:var(--sur);border:1px solid var(--b0);color:var(--t1);border-radius:var(--rmd) var(--rmd) var(--rmd) 2px;box-shadow:var(--shc);}
+.chart-bub{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);padding:12px 14px;width:100%;box-shadow:var(--shc);}
+.cts{font-size:10px;color:var(--tm);font-family:var(--mono);padding:0 2px;}
+.mini-lbl{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--tm);margin-bottom:10px;}
+.mini-bars{display:flex;align-items:flex-end;gap:4px;height:56px;}
+.mbar{flex:1;background:var(--blue-lt);border:1px solid var(--blue-bd);border-radius:3px 3px 0 0;position:relative;}
+.mbar.warn{background:var(--amber-lt);border-color:var(--amber-bd);}.mbar.good{background:var(--green-lt);border-color:var(--green-bd);}
+.mbar-lbl{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:9px;color:var(--tm);font-family:var(--mono);white-space:nowrap;}
+.chat-inp-wrap{padding:12px 14px;border-top:1px solid var(--b0);display:flex;flex-direction:column;gap:8px;background:var(--sur);}
+.chat-inp-row{display:flex;gap:7px;align-items:flex-end;}
+.chat-inp{flex:1;background:var(--elv);border:1px solid var(--b1);border-radius:var(--rmd);padding:8px 12px;color:var(--t1);font-family:var(--ui);font-size:12.5px;resize:none;outline:none;min-height:36px;max-height:80px;}
+.chat-inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,217,.1);}
+.chat-inp::placeholder{color:var(--tm);}
+.btn-send{width:34px;height:34px;background:var(--blue);border:none;border-radius:var(--rsm);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.btn-send:hover{background:#004BBD;}
+.btn-voice{width:34px;height:34px;background:var(--elv);border:1px solid var(--b1);border-radius:var(--rsm);color:var(--t2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.disc{font-size:10px;color:var(--tm);text-align:center;}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border-radius:var(--rsm);font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .15s;white-space:nowrap;font-family:var(--ui);}
+.btn-p{background:var(--blue);color:#fff;font-weight:600;}.btn-p:hover{background:#004BBD;}
+.btn-s{background:var(--sur);color:var(--t2);border:1px solid var(--b1);}.btn-s:hover{color:var(--t1);border-color:var(--blue);background:var(--blue-lt);}
+.btn-g{background:transparent;color:var(--t2);border:1px solid transparent;}.btn-g:hover{color:var(--t1);background:var(--hov);}
+.btn-d{background:var(--red-lt);color:var(--red);border:1px solid var(--red-bd);}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;white-space:nowrap;}
+.bg{background:var(--green-lt);color:var(--green);border:1px solid var(--green-bd);}
+.ba{background:var(--amber-lt);color:var(--amber);border:1px solid var(--amber-bd);}
+.br{background:var(--red-lt);color:var(--red);border:1px solid var(--red-bd);}
+.bb{background:var(--blue-lt);color:var(--blue);border:1px solid var(--blue-bd);}
+.bm{background:var(--elv);color:var(--tm);border:1px solid var(--b0);}
+.pill{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;}
+.pill-h{background:var(--green-lt);color:var(--green);border:1px solid var(--green-bd);}
+.pill-m{background:var(--amber-lt);color:var(--amber);border:1px solid var(--amber-bd);}
+
+/* Metric cards */
+.mcgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.mcgrid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.mcard{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);padding:16px;display:flex;flex-direction:column;gap:6px;position:relative;overflow:hidden;box-shadow:var(--shc);}
+.mcard::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;}
+.mcard.cb::before{background:var(--blue);}.mcard.cg::before{background:var(--green);}
+.mcard.ca::before{background:var(--amber);}.mcard.cr::before{background:var(--red);}
+.mcard.ci::before{background:var(--info);}
+.mc-lbl{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tm);}
+.mc-val{font-family:var(--mono);font-size:22px;font-weight:600;color:var(--t1);letter-spacing:-.02em;line-height:1.1;}
+.mc-val .cur{font-size:12px;color:var(--tm);margin-right:2px;font-weight:500;}
+.mc-delta{font-size:11px;font-family:var(--mono);font-weight:500;}
+.du{color:var(--green);}.dd{color:var(--red);}.df{color:var(--tm);}
+.mc-sub{font-size:10px;color:var(--tm);border-top:1px solid var(--b0);padding-top:7px;margin-top:2px;}
+
+/* Status card */
+.scard{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);padding:13px 18px;display:flex;align-items:center;gap:16px;box-shadow:var(--shc);}
+.sdot{width:10px;height:10px;border-radius:50%;flex-shrink:0;animation:pulse 2.4s ease-in-out infinite;}
+.sdn{background:var(--green);}.sda{background:var(--amber);}
+.slbl-n{color:var(--green);font-size:13px;font-weight:700;}.slbl-w{color:var(--amber);font-size:13px;font-weight:700;}
+.sdesc{font-size:12.5px;color:var(--t2);flex:1;line-height:1.6;}
+
+/* Section card */
+.sc{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);box-shadow:var(--shc);overflow:visible;}
+.sc-hdr{padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b0);background:var(--elv);border-radius:var(--rmd) var(--rmd) 0 0;}
+.sc-title{font-size:12px;font-weight:700;color:var(--t1);}
+.sc-body{padding:16px;}
+
+/* Table */
+.twrap{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);overflow:hidden;box-shadow:var(--shc);}
+.thdr{padding:11px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b0);background:var(--elv);}
+.t-title{font-size:12px;font-weight:700;color:var(--t1);}
+table{width:100%;border-collapse:collapse;}
+thead th{padding:7px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tm);border-bottom:1px solid var(--b0);background:var(--elv);white-space:nowrap;}
+th.r,td.r{text-align:right;font-family:var(--mono);font-size:12px;}
+tbody tr{border-bottom:1px solid var(--b0);transition:background .1s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--hov);}
+tbody tr.wr{background:var(--amber-lt);}tbody tr.wr:hover{background:#fef3c7;}
+tbody td{padding:9px 14px;font-size:12.5px;color:var(--t2);vertical-align:middle;}
+.td1{color:var(--t1);font-weight:600;}.tds{color:var(--tm);font-size:11px;margin-top:1px;font-family:var(--mono);}
+
+/* Rec card */
+.rcard{background:var(--sur);border:1px solid var(--b0);border-left:4px solid var(--blue);border-radius:var(--rmd);padding:14px 16px;box-shadow:var(--shc);}
+.rcard-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.rtype{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);}
+.rbody{font-size:12.5px;color:var(--t1);line-height:1.65;margin-bottom:10px;}
+.rwhy{font-size:11px;color:var(--t2);display:flex;gap:6px;padding:8px 10px;background:var(--elv);border-radius:var(--rsm);border:1px solid var(--b0);margin-bottom:10px;}
+.rwhy-l{color:var(--tm);flex-shrink:0;font-weight:700;text-transform:uppercase;font-size:10px;letter-spacing:.05em;padding-top:1px;}
+.rftr{display:flex;align-items:center;justify-content:space-between;padding-top:10px;border-top:1px solid var(--b0);}
+.rmeta{font-size:10px;color:var(--tm);font-family:var(--mono);}
+
+/* Page header */
+.phdr{display:flex;align-items:flex-start;justify-content:space-between;}
+.ptitle{font-size:17px;font-weight:700;color:var(--t1);letter-spacing:-.01em;}
+.psub{font-size:11px;color:var(--tm);font-family:var(--mono);margin-top:2px;letter-spacing:.03em;}
+.pacts{display:flex;gap:8px;align-items:center;}
+
+/* Tabs */
+.tab-bar{display:flex;border-bottom:1px solid var(--b0);background:var(--sur);}
+.tab{padding:10px 18px;font-size:12px;font-weight:500;color:var(--tm);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;white-space:nowrap;}
+.tab:hover{color:var(--t1);}.tab.active{color:var(--blue);border-bottom-color:var(--blue);font-weight:600;}
+
+/* Forecast period tabs */
+.fc-tabs{display:flex;background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);overflow:hidden;box-shadow:var(--shc);}
+.fc-tab{flex:1;padding:12px 10px;text-align:center;cursor:pointer;border-right:1px solid var(--b0);transition:background .12s;}
+.fc-tab:last-child{border-right:none;}
+.fc-tab-l{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tm);}
+.fc-tab-v{font-family:var(--mono);font-size:17px;font-weight:600;margin-top:3px;color:var(--t2);}
+.fc-tab-t{font-size:10px;margin-top:2px;font-weight:600;}
+.fc-tab.active{background:var(--blue-lt);border-bottom:3px solid var(--blue);}
+.fc-tab.active .fc-tab-l{color:var(--blue);}.fc-tab.active .fc-tab-v{color:var(--t1);}
+
+/* Form */
+.fg{display:flex;flex-direction:column;gap:5px;}.flbl{font-size:11px;font-weight:600;color:var(--t2);}
+.inp{background:var(--sur);border:1px solid var(--b1);border-radius:var(--rsm);padding:7px 11px;color:var(--t1);font-size:12.5px;font-family:var(--ui);outline:none;transition:all .15s;width:100%;}
+.inp:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,87,217,.1);}
+.inp::placeholder{color:var(--tm);}
+.sel{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%239AA3B5'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;padding-right:28px;}
+.tog{position:relative;width:36px;height:20px;background:var(--b1);border-radius:10px;cursor:pointer;transition:background .2s;flex-shrink:0;}
+.tog.on{background:var(--blue);}
+.tog::after{content:'';position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.2);}
+.tog.on::after{transform:translateX(16px);}
+
+/* Exceptions */
+.exc-item{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--b0);}
+.exc-item:last-child{border-bottom:none;}
+.exc-icon{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;margin-top:1px;}
+.ei-w{background:var(--amber-lt);color:var(--amber);border:1px solid var(--amber-bd);}
+.ei-e{background:var(--red-lt);color:var(--red);border:1px solid var(--red-bd);}
+.exc-title{font-size:12px;font-weight:600;color:var(--t1);}.exc-desc{font-size:11px;color:var(--tm);margin-top:2px;line-height:1.5;}
+
+/* Upload */
+.uzone{border:2px dashed var(--b1);border-radius:var(--rmd);padding:22px 16px;text-align:center;cursor:pointer;transition:all .2s;}
+.uzone:hover{border-color:var(--blue);background:var(--blue-lt);}
+.uzone-icon{font-size:24px;margin-bottom:8px;opacity:.5;}
+.uzone-title{font-size:13px;font-weight:600;color:var(--t1);margin-bottom:3px;}
+.uzone-sub{font-size:11px;color:var(--tm);}
+.ucard{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);padding:18px;box-shadow:var(--shc);display:flex;flex-direction:column;gap:12px;}
+.ucard-title{font-size:12px;font-weight:700;color:var(--t1);display:flex;align-items:center;gap:8px;}
+.uiw{width:32px;height:32px;border-radius:var(--rsm);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.rfile{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b0);}
+.rfile:last-child{border-bottom:none;}
+.ficon{width:30px;height:30px;border-radius:var(--rsm);background:var(--blue-lt);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0;border:1px solid var(--blue-bd);}
+.mgrid{display:grid;grid-template-columns:1fr 24px 1fr;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid var(--b0);}
+.mgrid:last-child{border-bottom:none;}
+.mcol{font-size:11px;padding:5px 8px;border-radius:var(--rsm);border:1px solid var(--b0);background:var(--elv);color:var(--t2);font-family:var(--mono);}
+.marr{text-align:center;color:var(--tm);font-size:12px;}
+
+/* Variance */
+.vdrv{display:flex;align-items:center;gap:10px;padding:8px 12px;border-radius:var(--rsm);border:1px solid var(--b0);background:var(--sur);}
+.vbar{height:6px;border-radius:3px;background:var(--b0);flex:1;}.vfill{height:100%;border-radius:3px;}
+
+/* ── INSIGHTS (CFO) ── */
+.insights-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px;}
+.insight-card{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);padding:18px;box-shadow:var(--shc);display:flex;flex-direction:column;gap:8px;min-height:120px;}
+.ins-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--tm);}
+.ins-value{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--t1);letter-spacing:-.02em;line-height:1.1;}
+.ins-delta{font-size:11px;font-family:var(--mono);font-weight:500;}
+.ins-sub{font-size:10px;color:var(--tm);}
+.live-badge{display:flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:var(--green);}
+
+/* Report */
+.report-wrap{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);box-shadow:var(--shc);flex-shrink:0;}
+.rep-cover{background:linear-gradient(135deg,#0057D9,#0041A8);padding:28px 32px;color:#fff;border-radius:var(--rmd) var(--rmd) 0 0;}
+.rep-title{font-size:22px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px;}
+.rep-sub{font-size:12px;opacity:.75;font-family:var(--mono);letter-spacing:.04em;}
+.rep-stats{margin-top:20px;display:flex;gap:24px;flex-wrap:wrap;}
+.rcs{display:flex;flex-direction:column;gap:2px;}
+.rcs-l{font-size:10px;opacity:.65;text-transform:uppercase;letter-spacing:.07em;font-weight:600;}
+.rcs-v{font-family:var(--mono);font-size:15px;font-weight:600;}
+.rep-body{padding:24px 32px;}
+.rep-sec{margin-bottom:22px;}
+.rep-sec-title{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--blue);margin-bottom:10px;padding-bottom:7px;border-bottom:2px solid var(--blue-lt);}
+.rep-text{font-size:13px;color:var(--t2);line-height:1.8;}
+.rep-text strong{color:var(--t1);}
+.rep-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--b0);}
+.rep-row:last-child{border-bottom:none;}
+.rep-rl{font-size:12px;color:var(--t2);}.rep-rv{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--t1);}
+.act-item{display:flex;align-items:flex-start;gap:12px;padding:10px 14px;border-radius:var(--rmd);border:1px solid;margin-bottom:8px;}
+.act-item:last-child{margin-bottom:0;}
+.act-u{background:var(--amber-lt);border-color:var(--amber-bd);}.act-n{background:var(--blue-lt);border-color:var(--blue-bd);}
+.act-num{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;margin-top:1px;}
+.num-u{background:var(--amber);color:#fff;}.num-n{background:var(--blue);color:#fff;}
+
+/* Modal */
+.moverlay{position:fixed;inset:0;background:rgba(15,23,40,.4);z-index:200;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s;}
+.moverlay.open{opacity:1;pointer-events:all;}
+.modal{background:var(--sur);border-radius:var(--rlg);box-shadow:var(--she);width:560px;max-width:96vw;max-height:86vh;display:flex;flex-direction:column;overflow:hidden;}
+.mhdr{padding:16px 20px;border-bottom:1px solid var(--b0);display:flex;align-items:center;justify-content:space-between;background:var(--elv);}
+.mtitle{font-size:14px;font-weight:700;color:var(--t1);}
+.mbody{padding:20px;overflow-y:auto;flex:1;}
+.mftr{padding:14px 20px;border-top:1px solid var(--b0);display:flex;justify-content:flex-end;gap:8px;background:var(--elv);}
+
+/* Toast */
+.toast-area{position:fixed;top:16px;right:16px;z-index:999;display:flex;flex-direction:column;gap:8px;pointer-events:none;}
+.toast{display:flex;align-items:flex-start;gap:10px;padding:12px 14px;background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);box-shadow:var(--she);min-width:280px;max-width:360px;animation:tin .2s ease;pointer-events:all;}
+@keyframes tin{from{transform:translateX(20px);opacity:0;}to{transform:translateX(0);opacity:1;}}
+.t-icon{font-size:15px;flex-shrink:0;}.t-title{font-size:12px;font-weight:700;color:var(--t1);}.t-msg{font-size:11px;color:var(--t2);margin-top:2px;}.t-close{font-size:14px;color:var(--tm);cursor:pointer;flex-shrink:0;margin-left:auto;}
+.toast.ok{border-left:3px solid var(--green);}.toast.wa{border-left:3px solid var(--amber);}.toast.er{border-left:3px solid var(--red);}
+
+/* Utility */
+.flex{display:flex;}.f1{flex:1;}.aic{align-items:center;}.jb{justify-content:space-between;}
+.g2{gap:8px;}.g3{gap:12px;}.g2c{display:grid;grid-template-columns:1fr 1fr;gap:14px;}.g4c{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.mt2{margin-top:8px;}.mt3{margin-top:12px;}.mt4{margin-top:16px;}.mb3{margin-bottom:12px;}.mb4{margin-bottom:16px;}
+.mono{font-family:var(--mono);}.bold{font-weight:700;}.w600{font-weight:600;}
+.xs{font-size:11px;}.sm{font-size:12.5px;}
+.c1{color:var(--t1);}.c2{color:var(--t2);}.cm{color:var(--tm);}
+.cg{color:var(--green);}.ca{color:var(--amber);}.cr{color:var(--red);}.cb{color:var(--blue);}
+.up{text-transform:uppercase;letter-spacing:.07em;}
+.div{border:none;border-top:1px solid var(--b0);margin:14px 0;}
+.wfull{width:100%;}
+
+/* ── Daily Briefing ── */
+.brief-wrap{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);box-shadow:var(--shc);flex-shrink:0;}
+.brief-hero{background:linear-gradient(135deg,#0057D9,#0041A8);padding:26px 32px;color:#fff;border-radius:var(--rmd) var(--rmd) 0 0;}
+.brief-hero-eyebrow{font-size:11px;opacity:.65;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;font-weight:600;}
+.brief-hero-title{font-size:21px;font-weight:700;letter-spacing:-.01em;margin-bottom:4px;}
+.brief-hero-sub{font-size:12px;opacity:.75;font-family:var(--mono);letter-spacing:.04em;}
+.brief-body{padding:28px 32px;}
+.brief-half{margin-bottom:28px;}
+.brief-half:last-child{margin-bottom:0;}
+.brief-half-label{display:flex;align-items:center;gap:10px;margin-bottom:16px;}
+.brief-half-tag{font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;padding:3px 10px;border-radius:10px;}
+.tag-behind{background:var(--elv);color:var(--t2);border:1px solid var(--b0);}
+.tag-ahead{background:var(--blue-lt);color:var(--blue);border:1px solid var(--blue-bd);}
+.brief-half-title{font-size:15px;font-weight:700;color:var(--t1);}
+.brief-half-range{font-size:11px;color:var(--tm);font-family:var(--mono);margin-left:auto;}
+.brief-day{display:flex;gap:16px;padding:14px 0;border-bottom:1px solid var(--b0);}
+.brief-day:last-child{border-bottom:none;}
+.brief-day-date{width:84px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--tm);font-family:var(--mono);letter-spacing:.03em;padding-top:1px;}
+.brief-day-date.today{color:var(--blue);}
+.brief-day-text{flex:1;font-size:13px;color:var(--t2);line-height:1.75;}
+.brief-day-text strong{color:var(--t1);}
+.brief-precedent{display:flex;gap:8px;align-items:flex-start;background:var(--elv);border:1px solid var(--b0);border-left:3px solid var(--info);border-radius:var(--rsm);padding:9px 12px;margin-top:10px;font-size:11.5px;color:var(--t2);line-height:1.6;}
+.brief-precedent-icon{flex-shrink:0;color:var(--info);font-size:13px;margin-top:1px;}
+.brief-outlook{background:var(--green-lt);border:1px solid var(--green-bd);border-radius:var(--rmd);padding:14px 18px;font-size:13px;color:var(--t1);line-height:1.7;margin-top:8px;}
+.brief-outlook strong{color:var(--green);}
+.brief-outlook-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:6px;}
+
+/* ── Trends & History ── */
+.trend-sec{margin-bottom:22px;}
+.trend-sec:last-child{margin-bottom:0;}
+.trend-sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+.trend-sec-num{width:22px;height:22px;border-radius:50%;background:var(--blue);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.trend-sec-title{font-size:14px;font-weight:700;color:var(--t1);}
+.trend-sec-sub{font-size:10px;color:var(--tm);font-family:var(--mono);margin-left:auto;}
+.yoy-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;}
+.yoy-card{background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);padding:16px;box-shadow:var(--shc);}
+.yoy-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tm);margin-bottom:8px;}
+.yoy-compare{display:flex;align-items:baseline;gap:10px;margin-bottom:6px;}
+.yoy-this{font-family:var(--mono);font-size:20px;font-weight:600;color:var(--t1);}
+.yoy-last{font-family:var(--mono);font-size:13px;color:var(--tm);}
+.yoy-delta{font-size:11px;font-family:var(--mono);font-weight:600;}
+.bench-row{display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--b0);}
+.bench-row:last-child{border-bottom:none;}
+.bench-label{width:200px;flex-shrink:0;font-size:12px;font-weight:600;color:var(--t1);}
+.bench-bar-wrap{flex:1;position:relative;height:6px;background:var(--b0);border-radius:3px;}
+.bench-bar-fill{height:100%;border-radius:3px;background:var(--blue);}
+.bench-marker{position:absolute;top:-4px;width:2px;height:14px;background:var(--t1);}
+.bench-val{font-family:var(--mono);font-size:11px;font-weight:600;color:var(--t1);width:70px;text-align:right;flex-shrink:0;}
+.bench-note{font-size:10.5px;color:var(--tm);width:160px;flex-shrink:0;}
+.ledger-row{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-bottom:1px solid var(--b0);}
+.ledger-row:last-child{border-bottom:none;}
+.ledger-month{width:70px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--tm);font-family:var(--mono);padding-top:2px;}
+.ledger-body{flex:1;}
+.ledger-title{font-size:12.5px;font-weight:600;color:var(--t1);margin-bottom:2px;}
+.ledger-desc{font-size:11.5px;color:var(--t2);line-height:1.6;}
+.ledger-amt{font-family:var(--mono);font-size:12px;font-weight:600;flex-shrink:0;padding-top:1px;}
+.creep-item{display:flex;align-items:flex-start;gap:12px;padding:12px 14px;background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:var(--rmd);margin-bottom:8px;}
+.creep-item:last-child{margin-bottom:0;}
+.creep-icon{font-size:14px;color:var(--amber);flex-shrink:0;margin-top:1px;}
+.creep-title{font-size:12.5px;font-weight:700;color:var(--t1);margin-bottom:3px;}
+.creep-desc{font-size:11.5px;color:var(--t2);line-height:1.65;}
+.creep-spark{display:flex;align-items:flex-end;gap:2px;height:24px;margin-top:8px;}
+.creep-spark-bar{width:8px;background:var(--amber);border-radius:1px;opacity:.55;}
+.creep-spark-bar:last-child{opacity:1;}
+.conc-bar-row{display:flex;align-items:center;gap:12px;padding:8px 0;}
+.conc-name{width:140px;flex-shrink:0;font-size:12px;font-weight:600;color:var(--t1);}
+.conc-bar-wrap{flex:1;height:18px;background:var(--elv);border-radius:4px;overflow:hidden;display:flex;}
+.conc-bar-seg{height:100%;}
+.conc-pct{width:50px;text-align:right;flex-shrink:0;font-family:var(--mono);font-size:11px;font-weight:600;color:var(--t1);}
+.signal-card{background:var(--info-lt);border:1px solid var(--info-bd);border-left:4px solid var(--info);border-radius:var(--rmd);padding:14px 16px;margin-bottom:10px;}
+.signal-card:last-child{margin-bottom:0;}
+.signal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.signal-tag{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--info);display:flex;align-items:center;gap:5px;}
+.signal-conf{font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px;background:var(--sur);color:var(--info);border:1px solid var(--info-bd);}
+.signal-text{font-size:12.5px;color:var(--t1);line-height:1.7;margin-bottom:8px;}
+.signal-basis{font-size:11px;color:var(--t2);display:flex;gap:6px;padding:7px 10px;background:var(--sur);border-radius:var(--rsm);border:1px solid var(--info-bd);}
+.signal-basis-label{color:var(--info);flex-shrink:0;font-weight:700;text-transform:uppercase;font-size:9.5px;letter-spacing:.05em;padding-top:1px;}
+.stress-line{display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px dashed var(--b0);}
+.stress-line:last-child{border-bottom:none;}
+.stress-if{font-size:11px;font-weight:700;color:var(--amber);flex-shrink:0;width:30px;padding-top:1px;}
+.stress-text{font-size:12px;color:var(--t2);line-height:1.65;}
+.stress-text strong{color:var(--t1);}
+.cost-strip{display:flex;gap:0;background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);box-shadow:var(--shc);overflow:hidden;}
+.cost-cell{flex:1;padding:14px 16px;border-right:1px solid var(--b0);}
+.cost-cell:last-child{border-right:none;}
+.cost-cell-label{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tm);margin-bottom:6px;}
+.cost-cell-val{font-family:var(--mono);font-size:17px;font-weight:600;color:var(--t1);}
+.cost-cell-val.warn{color:var(--amber);}
+.cost-cell-sub{font-size:10.5px;color:var(--tm);margin-top:4px;}
+
+@media print{
+  #pg-dashboard,#pg-forecast,#pg-uploads{display:none!important;}
+  #pg-cfo{display:contents!important;}
+  .sidebar,.topbar,.ai-panel,.noprint{display:none!important;}
+  .shell{display:block;}.main{padding:0;overflow:visible;height:auto;}
+  .report-wrap{box-shadow:none;border:none;}
+}
+
+/* ── Page scroll fix ── */
+.pg{display:none;}
+.pg.active-page{display:contents;}
+.shell{min-height:0;}
+.main{flex:1;min-height:0;}
+</style>
+</head>
+<body>
+<!-- ═══ DASHBOARD ═══ -->
+<div id="pg-dashboard" class="pg">
+<div class="shell panel">
+  <header class="topbar">
+    <div class="t-logo" onclick="goTo('dashboard')"><div class="logo-mark">CC</div>Core Cash Agent</div>
+    <div class="t-stats">
+      <div class="tst"><span class="tst-l">Total Cash</span><span class="tst-v">$12.84M</span></div>
+      <div class="tst"><span class="tst-l">Liquidity</span><span class="tst-v pos">Normal</span></div>
+      <div class="tst"><span class="tst-l">7-Day Forecast</span><span class="tst-v">$9.1M</span></div>
+      <div class="tst"><span class="tst-l">Exceptions</span><span class="tst-v warn">3 open</span></div>
+    </div>
+    <div class="t-right"><span class="as-of">AS OF 26 JUN 2026 · 09:14</span><button class="btn-icon">⟳</button><button class="btn-icon">🔔</button><div class="avatar">JD</div></div>
+  </header>
+  <nav class="sidebar">
+    <div class="sb-toggle" onclick="toggleSidebar(this)" title="Collapse sidebar">‹</div>
+    <div class="nav-sec">Main</div>
+    <div class="nav-item active" onclick="goTo('dashboard')"><span class="nav-icon">◉</span><span class="nav-label">Dashboard</span><span class="nav-tip">Dashboard</span></div>
+    <div class="nav-item" onclick="goTo('uploads')"><span class="nav-icon">↑</span><span class="nav-label">Uploads</span><span class="nav-badge">1</span><span class="nav-tip">Uploads</span></div>
+    <div class="nav-item" onclick="goTo('uploads');setTimeout(()=>swUpTab('accounts'),80)"><span class="nav-icon">≡</span><span class="nav-label">Account Master</span><span class="nav-tip">Account Master</span></div>
+    <div class="nav-sec">Analysis</div>
+    <div class="nav-item" onclick="goTo('forecast')"><span class="nav-icon">⌁</span><span class="nav-label">Forecast</span><span class="nav-tip">Forecast</span></div>
+    <div class="nav-item" onclick="goTo('forecast');setTimeout(()=>{const el=document.getElementById('variance-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-forecast .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">△</span><span class="nav-label">Variance</span><span class="nav-tip">Variance</span></div>
+    <div class="nav-item" onclick="goTo('dashboard');setTimeout(()=>{const el=document.getElementById('liquidity-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-dashboard .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">⚡</span><span class="nav-label">Liquidity Risk</span><span class="nav-badge">2</span><span class="nav-tip">Liquidity Risk</span></div>
+    <div class="nav-sec">Reports</div>
+    <div class="nav-item" onclick="goTo('cfo')"><span class="nav-icon">□</span><span class="nav-label">CFO Summary</span><span class="nav-tip">CFO Summary</span></div>
+    <div class="nav-item" onclick="goTo('briefing')"><span class="nav-icon">☀</span><span class="nav-label">Daily Briefing</span><span class="nav-tip">Daily Briefing</span></div>
+    <div class="nav-item" onclick="goTo('trends')"><span class="nav-icon">⟴</span><span class="nav-label">Trends &amp; History</span><span class="nav-tip">Trends &amp; History</span></div>
+    <div class="nav-item" onclick="goTo('cfo')"><span class="nav-icon">↓</span><span class="nav-label">Export</span><span class="nav-tip">Export</span></div>
+    <div class="nav-item"><span class="nav-icon">⊙</span><span class="nav-label">Audit Trail</span><span class="nav-tip">Audit Trail</span></div>
+    <div style="flex:1"></div>
+    <div class="sb-footer"><div class="sb-footer-lbl">Quick Stats</div><div class="sb-row"><span class="sb-n">Entities</span><span class="sb-v">3</span></div><div class="sb-row"><span class="sb-n">Banks</span><span class="sb-v">6</span></div><div class="sb-row"><span class="sb-n">Accounts</span><span class="sb-v">14</span></div><div class="sb-row"><span class="sb-n">Currencies</span><span class="sb-v">3</span></div></div>
+    <div class="nav-item" style="margin-top:4px"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span><span class="nav-tip">Settings</span></div>
+  </nav>
+  <main class="main">
+    <div class="phdr">
+      <div><div class="ptitle">Daily Cash Position</div><div class="psub">26 JUN 2026 · FORECAST V4 · AGENT RUN 09:14 UTC · <span style="color:var(--green)">✓ All feeds current</span></div></div>
+      <div class="pacts">
+        <select class="inp sel" style="width:auto;font-size:11px;padding:5px 28px 5px 10px"><option>26 Jun 2026</option><option>25 Jun 2026</option></select>
+        <button class="btn btn-s" style="font-size:11px">↓ Export</button>
+        <button class="btn btn-p" style="font-size:11px" onclick="toast('Agent refreshed','Daily Cash Position re-run current as of 09:14.','ok')">⟳ Refresh Agent</button>
+      </div>
+    </div>
+    <div class="scard"><div class="sdot sdn"></div><div class="slbl-n">Normal</div><div class="sdesc">You have <strong>47 days</strong> of cash at current burn rate. No shortfalls in 7-day window. GBP pool has £2.1M surplus available for deployment.</div><span class="badge bg">No action required</span></div>
+    <div class="mcgrid">
+      <div class="mcard cb"><div class="mc-lbl">Total Cash (USD eq.)</div><div class="mc-val"><span class="cur">$</span>12.84M</div><div class="mc-delta du">▲ +2.7% vs yesterday</div><div class="mc-sub">3 entities · 6 banks · 14 accounts</div></div>
+      <div class="mcard cg"><div class="mc-lbl">Usable Cash</div><div class="mc-val"><span class="cur">$</span>9.44M</div><div class="mc-delta du">▲ Surplus position</div><div class="mc-sub">Excl. $3.40M restricted</div></div>
+      <div class="mcard ca"><div class="mc-lbl">Restricted Cash</div><div class="mc-val"><span class="cur">$</span>3.40M</div><div class="mc-delta df">→ Unchanged</div><div class="mc-sub">2 accounts · Citi + Barclays</div></div>
+      <div class="mcard cg"><div class="mc-lbl">Data Confidence</div><div class="mc-val" style="font-size:18px;padding-top:4px">High</div><div class="mc-delta du">✓ All 6 feeds live</div><div class="mc-sub">Last updated 09:14 UTC</div></div>
+    </div>
+    <div class="sc">
+      <div class="sc-hdr"><div class="sc-title">Cash by Currency</div></div>
+      <div style="padding:12px 16px;display:flex;gap:24px;flex-wrap:wrap">
+        <div style="text-align:center;flex:1;min-width:120px"><div class="mc-lbl" style="margin-bottom:4px">USD</div><div style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--t1)">$8,640,000</div><div class="xs cm">67.3% of total</div><div style="height:4px;background:var(--elv);border-radius:2px;margin-top:6px"><div style="height:100%;width:67%;background:var(--blue);border-radius:2px"></div></div></div>
+        <div style="text-align:center;flex:1;min-width:120px"><div class="mc-lbl" style="margin-bottom:4px">GBP</div><div style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--t1)">£3,120,000</div><div class="xs cm">24.3% of total</div><div style="height:4px;background:var(--elv);border-radius:2px;margin-top:6px"><div style="height:100%;width:24%;background:var(--info);border-radius:2px"></div></div></div>
+        <div style="text-align:center;flex:1;min-width:120px"><div class="mc-lbl" style="margin-bottom:4px">EUR</div><div style="font-family:var(--mono);font-size:18px;font-weight:600;color:var(--amber)">€430,000</div><div class="xs ca bold">⚠ Below threshold</div><div style="height:4px;background:var(--elv);border-radius:2px;margin-top:6px"><div style="height:100%;width:8%;background:var(--amber);border-radius:2px"></div></div></div>
+      </div>
+    </div>
+    <div class="twrap">
+      <div class="thdr"><div class="t-title">Account Breakdown — All Entities</div><div class="flex g2"><select class="inp sel" style="width:auto;font-size:11px;padding:4px 28px 4px 8px"><option>All Entities</option><option>US HQ</option><option>UK Operations</option><option>EU Entity</option></select><button class="btn btn-s" style="font-size:11px;padding:4px 10px">↓ CSV</button></div></div>
+      <table>
+        <thead><tr><th>Entity · Account</th><th>Bank</th><th>CCY</th><th class="r">Balance</th><th class="r">Usable</th><th class="r">Min Threshold</th><th>Confidence</th><th>Flags</th><th>Source</th></tr></thead>
+        <tbody>
+          <tr style="background:var(--elv)"><td colspan="9" style="padding:6px 14px"><span class="bold xs up" style="cursor:pointer" onclick="toggleRows('ushq',this)">▾ US HQ</span><span class="badge bb" style="margin-left:8px">3 accounts</span><span style="font-family:var(--mono);font-size:11px;color:var(--t2);margin-left:12px">$8,640,000 USD</span></td></tr>
+          <tr class="grp-ushq"><td><div class="td1">JPM USD Main</div><div class="tds">****4821</div></td><td>JPMorgan</td><td><span class="badge bm">USD</span></td><td class="r w600 c1">$5,240,000</td><td class="r">$5,240,000</td><td class="r">$500,000</td><td><span class="pill pill-h">● High</span></td><td>—</td><td class="xs cm">BAI2 · 09:02</td></tr>
+          <tr class="grp-ushq"><td><div class="td1">JPM USD Payroll</div><div class="tds">****4830</div></td><td>JPMorgan</td><td><span class="badge bm">USD</span></td><td class="r">$2,000,000</td><td class="r">$2,000,000</td><td class="r">$1,800,000</td><td><span class="pill pill-h">● High</span></td><td>—</td><td class="xs cm">BAI2 · 09:02</td></tr>
+          <tr class="grp-ushq"><td><div class="td1">Citi USD Restricted</div><div class="tds">****9901</div></td><td>Citibank</td><td><span class="badge bm">USD</span></td><td class="r">$1,400,000</td><td class="r cm">$0</td><td class="r">—</td><td><span class="pill pill-h">● High</span></td><td><span class="xs cb w600">🔒 Restricted</span></td><td class="xs cm">BAI2 · 09:02</td></tr>
+          <tr style="background:var(--elv)"><td colspan="9" style="padding:6px 14px"><span class="bold xs up" style="cursor:pointer" onclick="toggleRows('ukops',this)">▾ UK Operations</span><span class="badge bb" style="margin-left:8px">2 accounts</span><span style="font-family:var(--mono);font-size:11px;color:var(--t2);margin-left:12px">£3,120,000 GBP</span></td></tr>
+          <tr class="grp-ukops"><td><div class="td1">HSBC GBP Pool</div><div class="tds">****0033</div></td><td>HSBC</td><td><span class="badge bm">GBP</span></td><td class="r w600 c1">£2,800,000</td><td class="r">£2,800,000</td><td class="r">£700,000</td><td><span class="pill pill-h">● High</span></td><td>—</td><td class="xs cm">camt.053 · 08:55</td></tr>
+          <tr class="grp-ukops"><td><div class="td1">Barclays GBP Ops</div><div class="tds">****1122</div></td><td>Barclays</td><td><span class="badge bm">GBP</span></td><td class="r">£320,000</td><td class="r">£320,000</td><td class="r">£200,000</td><td><span class="pill pill-m">● Medium</span></td><td><span class="xs ca w600">⚠ Stale 2d</span></td><td class="xs cm">MT940 · 24 Jun</td></tr>
+          <tr style="background:var(--elv)"><td colspan="9" style="padding:6px 14px"><span class="bold xs up" style="cursor:pointer" onclick="toggleRows('eu',this)">▾ EU Entity</span><span class="badge ba" style="margin-left:8px">2 accounts</span><span style="font-family:var(--mono);font-size:11px;color:var(--t2);margin-left:12px">€430,000 EUR</span><span class="xs ca w600" style="margin-left:8px">⚠ Below threshold</span></td></tr>
+          <tr class="grp-eu wr"><td><div class="td1">BofA EUR Reserve</div><div class="tds">****7712</div></td><td>Bank of America</td><td><span class="badge bm">EUR</span></td><td class="r w600 ca">€430,000</td><td class="r cm">€0</td><td class="r ca">€500,000</td><td><span class="pill pill-m">● Medium</span></td><td><span class="xs cr w600">✕ Below min</span></td><td class="xs cm">camt.053 · 09:01</td></tr>
+          <tr class="grp-eu"><td><div class="td1">BofA EUR Ops</div><div class="tds">****7730</div></td><td>Bank of America</td><td><span class="badge bm">EUR</span></td><td class="r">€0</td><td class="r cm">€0</td><td class="r">€100,000</td><td><span class="pill pill-h">● High</span></td><td><span class="xs cb">ℹ Zero balance</span></td><td class="xs cm">camt.053 · 09:01</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="rcard" id="dash-rec-card">
+      <div class="rcard-hdr"><div class="rtype">⟳ Action Recommendation · Agent 3 · Liquidity Risk</div><span class="pill pill-h">● High confidence</span></div>
+      <div class="rbody">Review funding for <strong>EU Entity BofA EUR Reserve (****7712)</strong>. Balance €430K is below minimum of €500K. Consider transferring <strong style="font-family:var(--mono);color:var(--blue)">EUR 150,000</strong> from HSBC GBP Pool or intercompany facility before <strong>end of business today</strong>.</div>
+      <div class="rwhy"><span class="rwhy-l">Why</span>BofA EUR Reserve €70K below minimum · EU AP €120K due Fri 28 Jun · No EUR AR before 2 Jul · GBP pool £2.1M above minimum</div>
+      <div class="rftr"><div class="rmeta">Agent 3 · 09:14 UTC · Approval: Finance Director · Cut-off: 15:00 CET</div><div class="flex g2"><button class="btn btn-g" style="font-size:11px" onclick="toast('Marked reviewed','Recommendation logged.','ok')">✓ Mark Reviewed</button><button class="btn btn-p" style="font-size:11px" onclick="document.getElementById('modal-risk').classList.add('open')">View Full Analysis →</button></div></div>
+    </div>
+
+    <!-- ── LIQUIDITY RISK SECTION ── -->
+    <div id="liquidity-section">
+      <div class="phdr mt2"><div><div class="ptitle">Liquidity Risk Analysis</div><div class="psub">REAL-TIME · AGENT 3 · 26 JUN 2026</div></div><button class="btn btn-s" style="font-size:11px">↓ Export</button></div>
+      <div class="mcgrid">
+        <div class="mcard ca"><div class="mc-lbl">Risk Score</div><div class="mc-val" style="font-size:20px;padding-top:4px">2 / 10</div><div class="mc-delta du">▲ Improved from 3</div><div class="mc-sub">Low risk — 1 active item</div></div>
+        <div class="mcard cr"><div class="mc-lbl">Active Breaches</div><div class="mc-val" style="font-size:20px;padding-top:4px">1</div><div class="mc-delta dd">▼ BofA EUR Reserve</div><div class="mc-sub">Below €500K minimum</div></div>
+        <div class="mcard cb"><div class="mc-lbl">Cash Runway</div><div class="mc-val" style="font-size:20px;padding-top:4px">47 days</div><div class="mc-delta du">▲ +2 vs yesterday</div><div class="mc-sub">At current burn rate</div></div>
+        <div class="mcard cg"><div class="mc-lbl">Concentration Risk</div><div class="mc-val" style="font-size:20px;padding-top:4px">Low</div><div class="mc-delta du">USD 67% · GBP 24%</div><div class="mc-sub">3 currencies · 6 banks</div></div>
+      </div>
+      <div class="sc">
+        <div class="sc-hdr"><div class="sc-title">Risk Items</div><span class="badge br">1 critical · 2 watch</span></div>
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:0">
+          <div class="exc-item"><div class="exc-icon ei-e">✕</div><div style="flex:1"><div class="exc-title">BofA EUR Reserve — Below Minimum Threshold</div><div class="exc-desc">Balance €430K is €70K below the €500K minimum. EU AP of €120K due Fri 28 Jun will reduce to €310K. Funding required before 15:00 CET today. Owner: Finance Director.</div></div><div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0"><span class="badge br">Critical</span><button class="btn btn-s" style="font-size:10px;padding:2px 8px;margin-top:4px" onclick="document.getElementById('modal-risk').classList.add('open')">View →</button></div></div>
+          <div class="exc-item"><div class="exc-icon ei-w">⚠</div><div style="flex:1"><div class="exc-title">Barclays GBP Ops — Stale Balance (2 days)</div><div class="exc-desc">Statement not received since 24 Jun. Balance confidence reduced to Medium. UK Operations forecast may be understated.</div></div><span class="badge ba">Watch</span></div>
+          <div class="exc-item"><div class="exc-icon ei-w">⚠</div><div style="flex:1"><div class="exc-title">EUR Concentration Risk — Sub-Threshold</div><div class="exc-desc">EUR position 3.3% of total cash, below the 5% minimum currency policy. No EUR AR expected before 2 Jul.</div></div><span class="badge ba">Watch</span></div>
+        </div>
+      </div>
+      <div class="sc">
+        <div class="sc-hdr"><div class="sc-title">Threshold Monitoring</div></div>
+        <div style="padding:12px 16px">
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--b0)"><div style="width:160px;font-size:12px;color:var(--t1);font-weight:600">JPM USD Main</div><div style="flex:1;height:6px;background:var(--b0);border-radius:3px"><div style="height:100%;width:91%;background:var(--green);border-radius:3px"></div></div><div class="mono xs cg w600" style="width:60px;text-align:right">$5.24M</div><span class="badge bg" style="width:56px;justify-content:center">✓ OK</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--b0)"><div style="width:160px;font-size:12px;color:var(--t1);font-weight:600">JPM USD Payroll</div><div style="flex:1;height:6px;background:var(--b0);border-radius:3px"><div style="height:100%;width:95%;background:var(--green);border-radius:3px"></div></div><div class="mono xs cg w600" style="width:60px;text-align:right">$2.00M</div><span class="badge bg" style="width:56px;justify-content:center">✓ OK</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--b0)"><div style="width:160px;font-size:12px;color:var(--t1);font-weight:600">HSBC GBP Pool</div><div style="flex:1;height:6px;background:var(--b0);border-radius:3px"><div style="height:100%;width:80%;background:var(--green);border-radius:3px"></div></div><div class="mono xs cg w600" style="width:60px;text-align:right">£2.80M</div><span class="badge bg" style="width:56px;justify-content:center">✓ OK</span></div>
+            <div style="display:flex;align-items:center;gap:12px;padding:8px 0;"><div style="width:160px;font-size:12px;color:var(--amber);font-weight:600">BofA EUR Reserve</div><div style="flex:1;height:6px;background:var(--b0);border-radius:3px"><div style="height:100%;width:14%;background:var(--red);border-radius:3px"></div></div><div class="mono xs cr w600" style="width:60px;text-align:right">€430K</div><span class="badge br" style="width:56px;justify-content:center">✕ Low</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+  <aside class="ai-panel">
+    <div class="panel-hdr"><div class="pulse"></div><div class="panel-title">Exceptions &amp; Alerts</div><span class="nav-badge" style="margin-left:auto">3</span><button class="btn-icon" style="width:24px;height:24px;border:none;background:transparent;margin-left:6px;font-size:12px" onclick="swPanel('dash','chat')" title="AI Chat">💬</button><button class="chat-toggle-btn" onclick="toggleChat(this)" title="Collapse panel" style="margin-left:4px">›</button></div>
+    <div id="dash-exc" style="flex:1;overflow-y:auto;padding:14px 16px">
+      <div class="exc-item"><div class="exc-icon ei-e">✕</div><div style="flex:1"><div class="exc-title">BofA EUR Reserve — Below Minimum</div><div class="exc-desc">€430K vs €500K threshold. EU AP due Fri 28 Jun.</div></div><span class="badge br">Error</span></div>
+      <div class="exc-item"><div class="exc-icon ei-w">⚠</div><div style="flex:1"><div class="exc-title">Barclays GBP — Stale 2 days</div><div class="exc-desc">Statement not received since 24 Jun. UK Ops confidence reduced.</div></div><span class="badge ba">Warning</span></div>
+      <div class="exc-item"><div class="exc-icon ei-w">⚠</div><div style="flex:1"><div class="exc-title">AR — 3 Unmapped Counterparties</div><div class="exc-desc">3 AR lines (~$140K) not matched to entity master.</div></div><span class="badge ba">Warning</span></div>
+      <div class="div"></div>
+      <div class="xs up cm mb3">Data Sources</div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div class="flex jb xs"><span class="c2">Bank Balances (BAI2)</span><span class="mono cg w600">✓ 09:02</span></div>
+        <div class="flex jb xs"><span class="c2">camt.053 Feeds</span><span class="mono cg w600">✓ 09:01</span></div>
+        <div class="flex jb xs"><span class="c2">AR Data</span><span class="mono ca w600">⚠ 3 unmapped</span></div>
+        <div class="flex jb xs"><span class="c2">AP Data</span><span class="mono cg w600">✓ 08:45</span></div>
+        <div class="flex jb xs"><span class="c2">Manual Assumptions</span><span class="mono cg w600">✓ v4</span></div>
+      </div>
+      <div class="div"></div>
+      <button class="btn btn-g wfull" style="font-size:11px;justify-content:center" onclick="swPanel('dash','chat')">💬 Open AI Chat →</button>
+    </div>
+    <div id="dash-chat" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+      <div class="chat-msgs" id="dash-msgs"><div class="cmsg agent"><div class="cbubble">Cash is <strong>Normal</strong> as of 09:14. $12.84M total. 3 exceptions — most urgent is the BofA EUR Reserve shortfall. How can I help?</div><div class="cts">09:14</div></div></div>
+      <div class="chat-inp-wrap"><div class="chat-inp-row"><textarea class="chat-inp" id="dash-in" placeholder="Ask about cash, exceptions…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat('dash');}"></textarea><button class="btn-voice">🎙</button><button class="btn-send" onclick="sendChat('dash')">↑</button></div><div class="disc">Agent reads validated data only · Actions require approval</div></div>
+    </div>
+  </aside>
+</div>
+</div>
+<!-- ═══ FORECAST ═══ -->
+<div id="pg-forecast" class="pg">
+<div class="shell panel">
+  <header class="topbar">
+    <div class="t-logo" onclick="goTo('dashboard')"><div class="logo-mark">CC</div>Core Cash Agent</div>
+    <div class="t-stats"><div class="tst"><span class="tst-l">Total Cash</span><span class="tst-v">$12.84M</span></div><div class="tst"><span class="tst-l">7-Day Close</span><span class="tst-v pos">$9.1M</span></div><div class="tst"><span class="tst-l">30-Day Low</span><span class="tst-v warn">$4.1M</span></div><div class="tst"><span class="tst-l">Forecast Conf.</span><span class="tst-v pos">High</span></div></div>
+    <div class="t-right"><span class="as-of">AS OF 26 JUN 2026 · 09:14</span><button class="btn-icon">⟳</button><div class="avatar">JD</div></div>
+  </header>
+  <nav class="sidebar">
+    <div class="sb-toggle" onclick="toggleSidebar(this)" title="Collapse sidebar">‹</div>
+    <div class="nav-sec">Main</div>
+    <div class="nav-item" onclick="goTo('dashboard')"><span class="nav-icon">◉</span><span class="nav-label">Dashboard</span><span class="nav-tip">Dashboard</span></div>
+    <div class="nav-item" onclick="goTo('uploads')"><span class="nav-icon">↑</span><span class="nav-label">Uploads</span><span class="nav-badge">1</span><span class="nav-tip">Uploads</span></div>
+    <div class="nav-item" onclick="goTo('uploads');setTimeout(()=>swUpTab('accounts'),80)"><span class="nav-icon">≡</span><span class="nav-label">Account Master</span><span class="nav-tip">Account Master</span></div>
+    <div class="nav-sec">Analysis</div>
+    <div class="nav-item active" onclick="goTo('forecast')"><span class="nav-icon">⌁</span><span class="nav-label">Forecast</span><span class="nav-tip">Forecast</span></div>
+    <div class="nav-item" onclick="goTo('forecast');setTimeout(()=>{const el=document.getElementById('variance-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-forecast .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">△</span><span class="nav-label">Variance</span><span class="nav-tip">Variance</span></div>
+    <div class="nav-item" onclick="goTo('dashboard');setTimeout(()=>{const el=document.getElementById('liquidity-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-dashboard .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">⚡</span><span class="nav-label">Liquidity Risk</span><span class="nav-badge">2</span><span class="nav-tip">Liquidity Risk</span></div>
+    <div class="nav-sec">Reports</div>
+    <div class="nav-item" onclick="goTo('cfo')"><span class="nav-icon">□</span><span class="nav-label">CFO Summary</span><span class="nav-tip">CFO Summary</span></div>
+    <div class="nav-item" onclick="goTo('briefing')"><span class="nav-icon">☀</span><span class="nav-label">Daily Briefing</span><span class="nav-tip">Daily Briefing</span></div>
+    <div class="nav-item" onclick="goTo('trends')"><span class="nav-icon">⟴</span><span class="nav-label">Trends &amp; History</span><span class="nav-tip">Trends &amp; History</span></div>
+    <div style="flex:1"></div>
+    <div class="sb-footer"><div class="sb-footer-lbl">Forecast Info</div><div class="sb-row"><span class="sb-n">Version</span><span class="sb-v">v4</span></div><div class="sb-row"><span class="sb-n">Assumptions</span><span class="sb-v">4</span></div><div class="sb-row"><span class="sb-n">Horizon</span><span class="sb-v">60 days</span></div></div>
+    <div class="nav-item" style="margin-top:4px"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span><span class="nav-tip">Settings</span></div>
+  </nav>
+  <main class="main">
+    <div class="phdr">
+      <div><div class="ptitle">Forecast &amp; Variance Analysis</div><div class="psub">FORECAST V4 · 26 JUN 2026 · HORIZONS: 7 / 30 / 60 DAYS</div></div>
+      <div class="pacts">
+        <select class="inp sel" style="width:auto;font-size:11px;padding:5px 28px 5px 10px"><option>All Entities</option><option>US HQ</option><option>UK Operations</option><option>EU Entity</option></select>
+        <button class="btn btn-s" style="font-size:11px" onclick="document.getElementById('modal-assume').classList.add('open')">＋ Add Assumption</button>
+        <button class="btn btn-p" style="font-size:11px" onclick="toast('Reforecast running','Forecast agent re-running. ETA 15s.','wa')">⟳ Reforecast</button>
+      </div>
+    </div>
+    <div class="fc-tabs">
+      <div class="fc-tab active" onclick="setFcTab(this,0)"><div class="fc-tab-l">7-Day</div><div class="fc-tab-v">$9.1M</div><div class="fc-tab-t" style="color:var(--green)">▲ Improving</div></div>
+      <div class="fc-tab" onclick="setFcTab(this,1)"><div class="fc-tab-l">30-Day</div><div class="fc-tab-v">$6.2M</div><div class="fc-tab-t" style="color:var(--amber)">↓ Watch payroll</div></div>
+      <div class="fc-tab" onclick="setFcTab(this,2)"><div class="fc-tab-l">60-Day</div><div class="fc-tab-v">$7.8M</div><div class="fc-tab-t" style="color:var(--tm)">→ Stable</div></div>
+    </div>
+    <div class="mcgrid">
+      <div class="mcard cb"><div class="mc-lbl">Opening Cash</div><div class="mc-val"><span class="cur">$</span>12.84M</div><div class="mc-delta df">Today 26 Jun</div></div>
+      <div class="mcard cg" id="fc-inflows"><div class="mc-lbl">Expected Inflows</div><div class="mc-val"><span class="cur">+$</span>2.40M</div><div class="mc-delta du">▲ AR + Rent</div><div class="mc-sub">Customer A $1.2M · Customer B $0.8M</div></div>
+      <div class="mcard ca" id="fc-outflows"><div class="mc-lbl">Expected Outflows</div><div class="mc-val"><span class="cur">–$</span>6.14M</div><div class="mc-delta dd">▼ Payroll · Tax · AP</div><div class="mc-sub">Payroll $0.78M · Tax $0.28M</div></div>
+      <div class="mcard cg" id="fc-close"><div class="mc-lbl">Forecast Closing</div><div class="mc-val"><span class="cur">$</span>9.10M</div><div class="mc-delta du">▲ vs opening</div><div class="mc-sub"><span class="pill pill-h">● High confidence</span></div></div>
+    </div>
+    <div id="fc-warn" style="display:none;background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:var(--rmd);padding:11px 16px;font-size:12.5px;color:var(--amber);font-weight:500">⚠ <strong>Lowest point: $4.1M in week 2 (7–11 Jul)</strong> — payroll $780K + Q2 tax $280K + delayed AR $340K. Recommend GBP→USD transfer before Thu 2 Jul cut-off.</div>
+    <div class="sc">
+      <div class="sc-hdr"><div class="sc-title">Cash Flow Visualisation</div><div class="flex g2"><button class="btn btn-p" id="fc-btn-bar" style="font-size:11px;padding:4px 10px" onclick="showFcChart('bar')">Bar</button><button class="btn btn-s" id="fc-btn-line" style="font-size:11px;padding:4px 10px" onclick="showFcChart('line')">Line</button><button class="btn btn-s" id="fc-btn-wf" style="font-size:11px;padding:4px 10px" onclick="showFcChart('wf')">Waterfall</button></div></div>
+      <div style="padding:16px">
+        <div id="fc-chart-bar"><div style="position:relative;height:220px"><canvas id="fc-bar-c"></canvas></div></div>
+        <div id="fc-chart-line" style="display:none"><div style="position:relative;height:220px"><canvas id="fc-line-c"></canvas></div></div>
+        <div id="fc-chart-wf" style="display:none">
+          <svg viewBox="0 0 620 190" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:190px">
+            <line x1="30" y1="155" x2="600" y2="155" stroke="#E8ECF4" stroke-width="1"/>
+            <rect x="40" y="22" width="80" height="133" rx="3" fill="#0057D9" fill-opacity=".8"/>
+            <text x="80" y="14" text-anchor="middle" font-size="10" fill="#4B5675" font-family="JetBrains Mono,monospace">$12.84M</text>
+            <text x="80" y="172" text-anchor="middle" font-size="9" fill="#9AA3B5">Opening</text>
+            <rect x="155" y="105" width="80" height="25" rx="3" fill="#059669" fill-opacity=".8"/>
+            <text x="195" y="97" text-anchor="middle" font-size="10" fill="#059669" font-family="JetBrains Mono,monospace">+$2.40M</text>
+            <text x="195" y="172" text-anchor="middle" font-size="9" fill="#9AA3B5">Inflows</text>
+            <rect x="270" y="60" width="80" height="63" rx="3" fill="#DC2626" fill-opacity=".75"/>
+            <text x="310" y="52" text-anchor="middle" font-size="10" fill="#DC2626" font-family="JetBrains Mono,monospace">–$6.14M</text>
+            <text x="310" y="172" text-anchor="middle" font-size="9" fill="#9AA3B5">Outflows</text>
+            <rect x="385" y="60" width="80" height="95" rx="3" fill="#0057D9" fill-opacity=".7"/>
+            <text x="425" y="52" text-anchor="middle" font-size="10" fill="#0057D9" font-family="JetBrains Mono,monospace">$9.10M</text>
+            <text x="425" y="172" text-anchor="middle" font-size="9" fill="#9AA3B5">7-Day Close</text>
+          </svg>
+        </div>
+      </div>
+    </div>
+    <div class="twrap">
+      <div class="thdr"><div class="t-title">Forecast by Entity</div></div>
+      <table><thead><tr><th>Entity</th><th>CCY</th><th class="r">Opening</th><th class="r">Inflows</th><th class="r">Outflows</th><th class="r">Closing</th><th>Confidence</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td class="td1">US HQ</td><td><span class="badge bm">USD</span></td><td class="r">$8,640,000</td><td class="r cg">+$1,200,000</td><td class="r cr">–$4,800,000</td><td class="r w600">$5,040,000</td><td><span class="pill pill-h">● High</span></td><td class="xs cm">Payroll + tax wk2</td></tr>
+        <tr><td class="td1">UK Operations</td><td><span class="badge bm">GBP</span></td><td class="r">£3,120,000</td><td class="r cg">+£800,000</td><td class="r cr">–£620,000</td><td class="r w600">£3,300,000</td><td><span class="pill pill-m">● Medium</span></td><td class="xs ca">⚠ Barclays stale</td></tr>
+        <tr class="wr"><td class="td1">EU Entity</td><td><span class="badge bm">EUR</span></td><td class="r ca">€430,000</td><td class="r cg">+€0</td><td class="r cr">–€120,000</td><td class="r w600 cr">€310,000</td><td><span class="pill pill-m">● Medium</span></td><td class="xs cr w600">⚠ Funding required</td></tr>
+      </tbody></table>
+    </div>
+    <div class="sc">
+      <div class="sc-hdr"><div class="sc-title">Manual Forecast Assumptions</div><button class="btn btn-p" style="font-size:11px" onclick="document.getElementById('modal-assume').classList.add('open')">＋ Add</button></div>
+      <div style="padding:10px 16px">
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b0)"><span class="badge bm">US HQ</span><span class="badge br">Outflow</span><span class="mono w600 cr" style="font-size:12px">–$780,000</span><span class="sm c2 f1">Payroll — 4 Jul 2026</span><span class="badge bm">Payroll</span><span class="pill pill-h" style="font-size:10px">● High</span><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button><button class="btn btn-d" style="font-size:10px;padding:2px 8px">✕</button></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b0)"><span class="badge bm">US HQ</span><span class="badge br">Outflow</span><span class="mono w600 cr" style="font-size:12px">–$280,000</span><span class="sm c2 f1">Q2 Tax Reserve — 5 Jul 2026</span><span class="badge bm">Tax</span><span class="pill pill-h" style="font-size:10px">● High</span><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button><button class="btn btn-d" style="font-size:10px;padding:2px 8px">✕</button></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--b0)"><span class="badge bm">UK Ops</span><span class="badge bg">Inflow</span><span class="mono w600 cg" style="font-size:12px">+£340,000</span><span class="sm c2 f1">Customer A delayed receipt — 7 Jul 2026</span><span class="badge bm">AR</span><span class="pill pill-m" style="font-size:10px">● Medium</span><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button><button class="btn btn-d" style="font-size:10px;padding:2px 8px">✕</button></div>
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0"><span class="badge bm">EU Entity</span><span class="badge br">Outflow</span><span class="mono w600 cr" style="font-size:12px">–€120,000</span><span class="sm c2 f1">Vendor AP — 28 Jun 2026</span><span class="badge bm">AP</span><span class="pill pill-h" style="font-size:10px">● High</span><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button><button class="btn btn-d" style="font-size:10px;padding:2px 8px">✕</button></div>
+      </div>
+    </div>
+    <div class="phdr mt2" id="variance-section"><div><div class="ptitle">Variance Analysis</div><div class="psub">ACTUAL vs FORECAST · 19–25 JUN 2026 · AGENT 4</div></div><button class="btn btn-s" style="font-size:11px">↓ Export</button></div>
+    <div class="mcgrid">
+      <div class="mcard cb"><div class="mc-lbl">Total Variance</div><div class="mc-val"><span class="cur">–$</span>340K</div><div class="mc-delta dd">▼ Unfavourable</div></div>
+      <div class="mcard ca"><div class="mc-lbl">Inflow Variance</div><div class="mc-val" style="font-size:18px;padding-top:4px"><span class="cur">–$</span>480K</div><div class="mc-delta dd">▼ Delayed collections</div></div>
+      <div class="mcard cg"><div class="mc-lbl">Outflow Variance</div><div class="mc-val" style="font-size:18px;padding-top:4px"><span class="cur">+$</span>140K</div><div class="mc-delta du">▲ Favourable</div></div>
+      <div class="mcard ci"><div class="mc-lbl">Explained Drivers</div><div class="mc-val" style="font-size:18px;padding-top:4px">4 items</div><div class="mc-delta df">Agent 4 output</div></div>
+    </div>
+    <div class="sc">
+      <div class="sc-hdr"><div class="sc-title">Top Variance Drivers</div></div>
+      <div style="padding:14px 16px;display:flex;flex-direction:column;gap:10px">
+        <div class="vdrv"><div style="width:130px;font-size:11px;font-weight:600;color:var(--t1)">Delayed Collection</div><div class="vbar"><div class="vfill" style="width:70%;background:var(--red)"></div></div><div class="mono xs cr w600" style="width:60px;text-align:right">–$340K</div><span class="pill pill-h" style="font-size:10px">● High</span><span class="xs cm">Customer A delayed 5d</span></div>
+        <div class="vdrv"><div style="width:130px;font-size:11px;font-weight:600;color:var(--t1)">Early AP Payment</div><div class="vbar"><div class="vfill" style="width:30%;background:var(--green)"></div></div><div class="mono xs cg w600" style="width:60px;text-align:right">+$140K</div><span class="pill pill-h" style="font-size:10px">● High</span><span class="xs cm">Vendor B settled early</span></div>
+        <div class="vdrv"><div style="width:130px;font-size:11px;font-weight:600;color:var(--t1)">AR Timing Diff.</div><div class="vbar"><div class="vfill" style="width:40%;background:var(--amber)"></div></div><div class="mono xs ca w600" style="width:60px;text-align:right">–$140K</div><span class="pill pill-m" style="font-size:10px">● Med</span><span class="xs cm">±3 day tolerance</span></div>
+        <div class="vdrv"><div style="width:130px;font-size:11px;font-weight:600;color:var(--t1)">Bank Fees</div><div class="vbar"><div class="vfill" style="width:5%;background:var(--red)"></div></div><div class="mono xs cr w600" style="width:60px;text-align:right">–$2K</div><span class="pill pill-h" style="font-size:10px">● High</span><span class="xs cm">SWIFT fees not modelled</span></div>
+      </div>
+    </div>
+  </main>
+  <aside class="ai-panel">
+    <div class="panel-hdr"><div class="pulse"></div><div class="panel-title">Cash Agent · AI</div><button class="chat-toggle-btn" style="margin-left:auto" onclick="toggleChat(this)" title="Collapse chat">›</button></div>
+    <div class="chat-msgs" id="fc-msgs">
+      <div class="cmsg agent"><div class="cbubble">Analysing your 7/30/60-day forecast. Main concern is the <strong>week 2 low of $4.1M</strong> — payroll + Q2 tax + delayed AR. Want me to model a mitigation scenario?</div><div class="cts">09:14</div></div>
+      <div class="cmsg agent"><div class="chart-bub"><div class="mini-lbl">30-Day Rolling Cash</div><div class="mini-bars"><div class="mbar" style="height:90%"><span class="mbar-lbl">Wk1</span></div><div class="mbar" style="height:85%"></div><div class="mbar" style="height:78%"></div><div class="mbar warn" style="height:45%"><span class="mbar-lbl">Wk2⚠</span></div><div class="mbar warn" style="height:50%"></div><div class="mbar" style="height:60%"><span class="mbar-lbl">Wk3</span></div><div class="mbar" style="height:65%"></div><div class="mbar good" style="height:75%"><span class="mbar-lbl">Wk4</span></div></div><div style="margin-top:22px;font-size:11px;color:var(--t2)">Week 2 dip: Payroll $780K + Tax $280K + Delayed AR $340K</div></div><div class="cts">09:14</div></div>
+    </div>
+    <div class="chat-inp-wrap"><div class="chat-inp-row"><textarea class="chat-inp" id="fc-in" placeholder="Ask about forecast, variance, assumptions…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat('fc');}"></textarea><button class="btn-voice">🎙</button><button class="btn-send" onclick="sendChat('fc')">↑</button></div><div class="disc">Agent reads validated data only · Actions require approval</div></div>
+  </aside>
+</div>
+</div>
+<!-- ═══ UPLOADS ═══ -->
+<div id="pg-uploads" class="pg">
+<div class="shell">
+  <header class="topbar">
+    <div class="t-logo" onclick="goTo('dashboard')"><div class="logo-mark">CC</div>Core Cash Agent</div>
+    <div class="t-stats"><div class="tst"><span class="tst-l">Total Cash</span><span class="tst-v">$12.84M</span></div><div class="tst"><span class="tst-l">Last Upload</span><span class="tst-v">09:02 today</span></div><div class="tst"><span class="tst-l">Pending Review</span><span class="tst-v warn">1 mapping</span></div></div>
+    <div class="t-right"><span class="as-of">AS OF 26 JUN 2026 · 09:14</span><button class="btn-icon">⟳</button><div class="avatar">JD</div></div>
+  </header>
+  <nav class="sidebar">
+    <div class="sb-toggle" onclick="toggleSidebar(this)" title="Collapse sidebar">‹</div>
+    <div class="nav-sec">Main</div>
+    <div class="nav-item" onclick="goTo('dashboard')"><span class="nav-icon">◉</span><span class="nav-label">Dashboard</span><span class="nav-tip">Dashboard</span></div>
+    <div class="nav-item active" onclick="goTo('uploads')"><span class="nav-icon">↑</span><span class="nav-label">Uploads</span><span class="nav-badge">1</span><span class="nav-tip">Uploads</span></div>
+    <div class="nav-item" onclick="goTo('uploads');setTimeout(()=>swUpTab('accounts'),80)"><span class="nav-icon">≡</span><span class="nav-label">Account Master</span><span class="nav-tip">Account Master</span></div>
+    <div class="nav-sec">Analysis</div>
+    <div class="nav-item" onclick="goTo('forecast')"><span class="nav-icon">⌁</span><span class="nav-label">Forecast</span><span class="nav-tip">Forecast</span></div>
+    <div class="nav-item" onclick="goTo('forecast');setTimeout(()=>{const el=document.getElementById('variance-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-forecast .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">△</span><span class="nav-label">Variance</span><span class="nav-tip">Variance</span></div>
+    <div class="nav-sec">Reports</div>
+    <div class="nav-item" onclick="goTo('cfo')"><span class="nav-icon">□</span><span class="nav-label">CFO Summary</span><span class="nav-tip">CFO Summary</span></div>
+    <div class="nav-item" onclick="goTo('briefing')"><span class="nav-icon">☀</span><span class="nav-label">Daily Briefing</span><span class="nav-tip">Daily Briefing</span></div>
+    <div class="nav-item" onclick="goTo('trends')"><span class="nav-icon">⟴</span><span class="nav-label">Trends &amp; History</span><span class="nav-tip">Trends &amp; History</span></div>
+    <div style="flex:1"></div>
+    <div class="sb-footer"><div class="sb-footer-lbl">Upload Stats</div><div class="sb-row"><span class="sb-n">Today</span><span class="sb-v">4 files</span></div><div class="sb-row"><span class="sb-n">This week</span><span class="sb-v">18 files</span></div><div class="sb-row"><span class="sb-n">Errors</span><span class="sb-v cr">1</span></div></div>
+    <div class="nav-item" style="margin-top:4px"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span><span class="nav-tip">Settings</span></div>
+  </nav>
+  <main class="main">
+    <div class="sc">
+      <div class="tab-bar" id="up-tab-bar">
+        <div class="tab active" onclick="swUpTab('files')">↑ File Uploads</div>
+        <div class="tab" onclick="swUpTab('mapping')">⇌ Column Mapping</div>
+        <div class="tab" onclick="swUpTab('accounts')">≡ Account Master</div>
+      </div>
+      <div id="up-files" style="padding:20px">
+        <div class="flex jb aic mb4"><div><div class="ptitle" style="font-size:15px">Upload Data Files</div><div class="psub">CSV or Excel · Max 10MB · Supports BAI2, camt.053, MT940</div></div><button class="btn btn-s" style="font-size:11px">↓ Download Templates</button></div>
+        <div class="g4c" style="margin-bottom:20px">
+          <div class="ucard"><div class="ucard-title"><div class="uiw" style="background:var(--blue-lt)">🏦</div>Bank Balances</div><div class="uzone" onclick="document.getElementById('fb').click()"><div class="uzone-icon">☁</div><div class="uzone-title">Drag &amp; drop or click</div><div class="uzone-sub">BAI2, camt.053, MT940, CSV</div></div><input type="file" id="fb" style="display:none" onchange="handleUp(event,'bank')"><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--green-lt);border:1px solid var(--green-bd);border-radius:var(--rsm);font-size:11px;color:var(--green)">✓ bank_balances_26jun.csv · Valid · 09:02</div><button class="btn btn-g" style="font-size:11px;padding:4px 10px;justify-content:center">↓ Template</button></div>
+          <div class="ucard"><div class="ucard-title"><div class="uiw" style="background:var(--green-lt)">📥</div>AR Data</div><div class="uzone" onclick="document.getElementById('far').click()"><div class="uzone-icon">☁</div><div class="uzone-title">Drag &amp; drop or click</div><div class="uzone-sub">AR aging, expected receipts</div></div><input type="file" id="far" style="display:none" onchange="handleUp(event,'ar')"><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--amber-lt);border:1px solid var(--amber-bd);border-radius:var(--rsm);font-size:11px;color:var(--amber)">⚠ ar_aging_26jun.xlsx · 3 unmapped counterparties</div><button class="btn btn-g" style="font-size:11px;padding:4px 10px;justify-content:center">↓ Template</button></div>
+          <div class="ucard"><div class="ucard-title"><div class="uiw" style="background:var(--red-lt)">📤</div>AP Data</div><div class="uzone" onclick="document.getElementById('fap').click()"><div class="uzone-icon">☁</div><div class="uzone-title">Drag &amp; drop or click</div><div class="uzone-sub">AP schedule, vendor payments</div></div><input type="file" id="fap" style="display:none" onchange="handleUp(event,'ap')"><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--green-lt);border:1px solid var(--green-bd);border-radius:var(--rsm);font-size:11px;color:var(--green)">✓ ap_schedule_26jun.xlsx · Valid · 08:45</div><button class="btn btn-g" style="font-size:11px;padding:4px 10px;justify-content:center">↓ Template</button></div>
+          <div class="ucard"><div class="ucard-title"><div class="uiw" style="background:var(--info-lt)">✏️</div>Manual Assumptions</div><div class="uzone" onclick="document.getElementById('fm').click()"><div class="uzone-icon">☁</div><div class="uzone-title">Drag &amp; drop or click</div><div class="uzone-sub">Payroll, tax, rent schedules</div></div><input type="file" id="fm" style="display:none" onchange="handleUp(event,'manual')"><div style="display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--green-lt);border:1px solid var(--green-bd);border-radius:var(--rsm);font-size:11px;color:var(--green)">✓ assumptions_v4.xlsx · 4 items active</div><button class="btn btn-g" style="font-size:11px;padding:4px 10px;justify-content:center">↓ Template</button></div>
+        </div>
+        <div class="sc">
+          <div class="sc-hdr"><div class="sc-title">Recent Uploads</div><button class="btn btn-g" style="font-size:11px">View All</button></div>
+          <div style="padding:10px 16px">
+            <div class="rfile"><div class="ficon">📄</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--t1)">bank_balances_26jun.csv</div><div class="xs cm">BAI2 · 2.4MB · JD · 09:02</div></div><span class="badge bg">✓ Valid</span><span class="badge bm" style="margin-left:6px">14 accounts</span></div>
+            <div class="rfile"><div class="ficon">📄</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--t1)">ap_schedule_26jun.xlsx</div><div class="xs cm">Excel · 1.1MB · JD · 08:45</div></div><span class="badge bg">✓ Valid</span><span class="badge bm" style="margin-left:6px">47 rows</span></div>
+            <div class="rfile"><div class="ficon" style="background:var(--amber-lt);color:var(--amber)">⚠</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--t1)">ar_aging_26jun.xlsx</div><div class="xs cm">Excel · 0.9MB · JD · 08:50</div></div><span class="badge ba">⚠ 3 warnings</span><button class="btn btn-g" style="font-size:10px;padding:2px 8px;margin-left:6px" onclick="swUpTab('mapping')">Review →</button></div>
+            <div class="rfile"><div class="ficon">📄</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--t1)">assumptions_v4.xlsx</div><div class="xs cm">Excel · 0.3MB · JD · 08:30</div></div><span class="badge bg">✓ Valid</span><span class="badge bm" style="margin-left:6px">4 items</span></div>
+            <div class="rfile"><div class="ficon" style="background:var(--red-lt);color:var(--red)">✕</div><div style="flex:1"><div style="font-size:12px;font-weight:600;color:var(--t1)">bank_balances_25jun.csv</div><div class="xs cm">BAI2 · 2.3MB · JD · 25 Jun 09:10</div></div><span class="badge br">✕ Error</span></div>
+          </div>
+        </div>
+      </div>
+      <div id="up-mapping" style="display:none;padding:20px">
+        <div class="flex jb aic mb4"><div><div class="ptitle" style="font-size:15px">Column Mapping — AR Data</div><div class="psub">MAP SOURCE COLUMNS TO SYSTEM FIELDS · TEMPLATE: AR_DEFAULT_v2</div></div><div class="flex g2"><button class="btn btn-s" style="font-size:11px">Load Template</button><button class="btn btn-p" style="font-size:11px" onclick="toast('Mapping saved','Column mapping saved as AR_DEFAULT_v2.','ok')">Save Template</button></div></div>
+        <div class="sc mb3">
+          <div class="sc-hdr"><div class="sc-title">File Preview — ar_aging_26jun.xlsx</div></div>
+          <div style="overflow-x:auto"><table><thead><tr><th>Customer ID</th><th>Customer Name</th><th>Invoice Ref</th><th>Due Date</th><th>Amount</th><th>Currency</th><th>Entity</th><th>Status</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">CUST-0041</td><td>Acme Corp</td><td class="mono">INV-24901</td><td class="mono">2026-07-05</td><td class="r">$340,000</td><td>USD</td><td>US HQ</td><td>Open</td></tr>
+            <tr><td class="mono">CUST-0082</td><td>GlobalTech Ltd</td><td class="mono">INV-24902</td><td class="mono">2026-07-08</td><td class="r">$860,000</td><td>USD</td><td>US HQ</td><td>Open</td></tr>
+            <tr class="wr"><td class="mono">UNK-001</td><td>—</td><td class="mono">INV-24903</td><td class="mono">2026-07-10</td><td class="r">£45,000</td><td>GBP</td><td>—</td><td class="ca w600">⚠ Unmapped</td></tr>
+            <tr><td class="mono">CUST-0055</td><td>Nordic AS</td><td class="mono">INV-24904</td><td class="mono">2026-07-12</td><td class="r">€95,000</td><td>EUR</td><td>EU Entity</td><td>Open</td></tr>
+            <tr class="wr"><td class="mono">EXT-002</td><td>—</td><td class="mono">INV-24905</td><td class="mono">2026-07-15</td><td class="r">$50,000</td><td>USD</td><td>—</td><td class="ca w600">⚠ Unmapped</td></tr>
+          </tbody></table></div>
+        </div>
+        <div class="sc">
+          <div class="sc-hdr"><div class="sc-title">Field Mapping</div><span class="badge bg">8 of 8 mandatory mapped</span></div>
+          <div style="padding:14px 16px">
+            <div style="display:grid;grid-template-columns:1fr 24px 1fr;gap:8px;padding:6px 0;margin-bottom:8px;border-bottom:2px solid var(--b0)"><div class="xs up cm">Source Column</div><div></div><div class="xs up cm">System Field</div></div>
+            <div class="mgrid"><div class="mcol">Customer ID</div><div class="marr">→</div><select class="inp sel" style="font-size:11px;padding:4px 28px 4px 8px;background:var(--green-lt);border-color:var(--green-bd)"><option>Counterparty ID *</option></select></div>
+            <div class="mgrid"><div class="mcol">Customer Name</div><div class="marr">→</div><select class="inp sel" style="font-size:11px;padding:4px 28px 4px 8px;background:var(--green-lt);border-color:var(--green-bd)"><option>Counterparty Name *</option></select></div>
+            <div class="mgrid"><div class="mcol">Invoice Ref</div><div class="marr">→</div><select class="inp sel" style="font-size:11px;padding:4px 28px 4px 8px;background:var(--green-lt);border-color:var(--green-bd)"><option>Reference *</option></select></div>
+            <div class="mgrid"><div class="mcol">Due Date</div><div class="marr">→</div><select class="inp sel" style="font-size:11px;padding:4px 28px 4px 8px;background:var(--green-lt);border-color:var(--green-bd)"><option>Expected Date *</option></select></div>
+            <div class="mgrid"><div class="mcol">Amount</div><div class="marr">→</div><select class="inp sel" style="font-size:11px;padding:4px 28px 4px 8px;background:var(--green-lt);border-color:var(--green-bd)"><option>Amount *</option></select></div>
+            <div class="mgrid"><div class="mcol">Currency</div><div class="marr">→</div><select class="inp sel" style="font-size:11px;padding:4px 28px 4px 8px;background:var(--green-lt);border-color:var(--green-bd)"><option>Currency *</option></select></div>
+            <div class="mgrid"><div class="mcol">Entity</div><div class="marr">→</div><select class="inp sel" style="font-size:11px;padding:4px 28px 4px 8px;background:var(--green-lt);border-color:var(--green-bd)"><option>Legal Entity *</option></select></div>
+            <div class="mgrid"><div class="mcol">Status</div><div class="marr">→</div><select class="inp sel" style="font-size:11px;padding:4px 28px 4px 8px"><option>Invoice Status (optional)</option></select></div>
+          </div>
+          <div style="padding:12px 16px;border-top:1px solid var(--b0);display:flex;justify-content:flex-end;gap:8px"><button class="btn btn-g" style="font-size:11px" onclick="swUpTab('files')">← Back</button><button class="btn btn-p" style="font-size:11px" onclick="toast('Processing','AR data parsing and validating.','ok')">Proceed to Process →</button></div>
+        </div>
+      </div>
+      <div id="up-accounts" style="display:none;padding:20px">
+        <div class="flex jb aic mb4"><div><div class="ptitle" style="font-size:15px">Account Master</div><div class="psub">14 ACCOUNTS · 3 ENTITIES · 6 BANKS · 3 CURRENCIES</div></div><div class="flex g2"><input class="inp" style="width:180px;font-size:11px;padding:5px 11px" placeholder="Search accounts…"><button class="btn btn-s" style="font-size:11px">↑ Bulk Import</button><button class="btn btn-p" style="font-size:11px" onclick="document.getElementById('modal-account').classList.add('open')">＋ Add Account</button></div></div>
+        <div class="twrap"><table>
+          <thead><tr><th>Account</th><th>Bank</th><th>Entity</th><th>CCY</th><th>Active</th><th class="r">Min Threshold</th><th>Frequency</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            <tr><td><div class="td1">****4821</div><div class="tds">JPM USD Main</div></td><td>JPMorgan</td><td>US HQ</td><td><span class="badge bm">USD</span></td><td><div class="tog on" onclick="this.classList.toggle('on')"></div></td><td class="r mono">$500,000</td><td>Daily</td><td><span class="badge bg">Active</span></td><td><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button></td></tr>
+            <tr><td><div class="td1">****4830</div><div class="tds">JPM USD Payroll</div></td><td>JPMorgan</td><td>US HQ</td><td><span class="badge bm">USD</span></td><td><div class="tog on" onclick="this.classList.toggle('on')"></div></td><td class="r mono">$1,800,000</td><td>Daily</td><td><span class="badge bg">Active</span></td><td><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button></td></tr>
+            <tr><td><div class="td1">****9901</div><div class="tds">Citi USD Restricted</div></td><td>Citibank</td><td>US HQ</td><td><span class="badge bm">USD</span></td><td><div class="tog" onclick="this.classList.toggle('on')"></div></td><td class="r mono">—</td><td>Daily</td><td><span class="badge bb">Restricted</span></td><td><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button></td></tr>
+            <tr><td><div class="td1">****0033</div><div class="tds">HSBC GBP Pool</div></td><td>HSBC</td><td>UK Operations</td><td><span class="badge bm">GBP</span></td><td><div class="tog on" onclick="this.classList.toggle('on')"></div></td><td class="r mono">£700,000</td><td>Daily</td><td><span class="badge bg">Active</span></td><td><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button></td></tr>
+            <tr><td><div class="td1">****1122</div><div class="tds">Barclays GBP Ops</div></td><td>Barclays</td><td>UK Operations</td><td><span class="badge bm">GBP</span></td><td><div class="tog on" onclick="this.classList.toggle('on')"></div></td><td class="r mono">£200,000</td><td>Daily</td><td><span class="badge ba">⚠ Stale</span></td><td><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button></td></tr>
+            <tr class="wr"><td><div class="td1">****7712</div><div class="tds">BofA EUR Reserve</div></td><td>Bank of America</td><td>EU Entity</td><td><span class="badge bm">EUR</span></td><td><div class="tog on" onclick="this.classList.toggle('on')"></div></td><td class="r mono cr">€500,000</td><td>Daily</td><td><span class="badge br">Below Min</span></td><td><button class="btn btn-g" style="font-size:10px;padding:2px 8px">Edit</button></td></tr>
+          </tbody>
+        </table></div>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+<!-- ═══ CFO SUMMARY ═══ -->
+<div id="pg-cfo" class="pg">
+<div class="shell panel">
+  <header class="topbar">
+    <div class="t-logo" onclick="goTo('dashboard')"><div class="logo-mark">CC</div>Core Cash Agent</div>
+    <div class="t-stats"><div class="tst"><span class="tst-l">Total Cash</span><span class="tst-v">$12.84M</span></div><div class="tst"><span class="tst-l">Liquidity</span><span class="tst-v pos">Normal</span></div><div class="tst"><span class="tst-l">Report Date</span><span class="tst-v">26 Jun 2026</span></div><div class="tst"><span class="tst-l">Mgmt Attention</span><span class="tst-v warn">1 item</span></div></div>
+    <div class="t-right"><span class="as-of">AS OF 26 JUN 2026 · 09:14</span><button class="btn-icon" onclick="window.print()">🖨</button><div class="avatar">JD</div></div>
+  </header>
+  <nav class="sidebar">
+    <div class="sb-toggle" onclick="toggleSidebar(this)" title="Collapse sidebar">‹</div>
+    <div class="nav-sec">Main</div>
+    <div class="nav-item" onclick="goTo('dashboard')"><span class="nav-icon">◉</span><span class="nav-label">Dashboard</span><span class="nav-tip">Dashboard</span></div>
+    <div class="nav-item" onclick="goTo('uploads')"><span class="nav-icon">↑</span><span class="nav-label">Uploads</span><span class="nav-badge">1</span><span class="nav-tip">Uploads</span></div>
+    <div class="nav-item" onclick="goTo('uploads');setTimeout(()=>swUpTab('accounts'),80)"><span class="nav-icon">≡</span><span class="nav-label">Account Master</span><span class="nav-tip">Account Master</span></div>
+    <div class="nav-sec">Analysis</div>
+    <div class="nav-item" onclick="goTo('forecast')"><span class="nav-icon">⌁</span><span class="nav-label">Forecast</span><span class="nav-tip">Forecast</span></div>
+    <div class="nav-item" onclick="goTo('forecast');setTimeout(()=>{const el=document.getElementById('variance-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-forecast .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">△</span><span class="nav-label">Variance</span><span class="nav-tip">Variance</span></div>
+    <div class="nav-sec">Reports</div>
+    <div class="nav-item active" onclick="goTo('cfo')"><span class="nav-icon">□</span><span class="nav-label">CFO Summary</span><span class="nav-tip">CFO Summary</span></div>
+    <div class="nav-item" onclick="goTo('briefing')"><span class="nav-icon">☀</span><span class="nav-label">Daily Briefing</span><span class="nav-tip">Daily Briefing</span></div>
+    <div class="nav-item" onclick="goTo('trends')"><span class="nav-icon">⟴</span><span class="nav-label">Trends &amp; History</span><span class="nav-tip">Trends &amp; History</span></div>
+    <div class="nav-item" onclick="goTo('cfo')"><span class="nav-icon">↓</span><span class="nav-label">Export</span><span class="nav-tip">Export</span></div>
+    <div style="flex:1"></div>
+    <div class="sb-footer"><div class="sb-footer-lbl">Report Info</div><div class="sb-row"><span class="sb-n">Version</span><span class="sb-v">v4</span></div><div class="sb-row"><span class="sb-n">Agent run</span><span class="sb-v">09:14</span></div><div class="sb-row"><span class="sb-n">Confidence</span><span class="sb-v cg">High</span></div></div>
+    <div class="nav-item" style="margin-top:4px"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span><span class="nav-tip">Settings</span></div>
+  </nav>
+  <main class="main">
+    <div class="phdr">
+      <div><div class="ptitle">CFO Summary &amp; AI Insights</div><div class="psub">DAILY EXECUTIVE REPORT · AGENT 5 · 26 JUN 2026</div></div>
+      <div class="pacts noprint">
+        <button class="btn btn-s" style="font-size:11px" onclick="toast('Email drafted','CFO Summary email draft created.','ok')">✉ Email Draft</button>
+        <button class="btn btn-s" style="font-size:11px" onclick="window.print()">🖨 Print</button>
+        <button class="btn btn-p" style="font-size:11px" onclick="toast('PDF generated','CFO_Summary_26Jun2026.pdf downloaded.','ok')">↓ Export PDF</button>
+      </div>
+    </div>
+
+    <!-- ── LIVE AI INSIGHTS ── -->
+    <div class="insights-wrap noprint" style="background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);box-shadow:var(--shc);">
+      <div class="sc-hdr" style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--b0);background:var(--elv);">
+        <div class="flex aic g2"><div class="pulse"></div><div class="sc-title">Live AI Insights</div><span style="font-size:10px;color:var(--tm);font-family:var(--mono)">· Auto-refreshing every 60s</span></div>
+        <div class="live-badge"><div class="pulse" style="width:6px;height:6px"></div>LIVE · <span id="cfo-live-time" style="margin-left:3px;font-family:var(--mono)">09:14</span></div>
+      </div>
+      <div style="padding:16px;">
+        <div class="insights-grid">
+          <div class="insight-card">
+            <div class="flex jb aic"><div class="ins-label">Cash Runway</div><span class="badge bg">Normal</span></div>
+            <div class="ins-value" id="cfo-runway">47 days</div>
+            <div class="ins-delta du">▲ +2 vs yesterday</div>
+            <div class="ins-sub">At current burn rate</div>
+          </div>
+          <div class="insight-card">
+            <div class="flex jb aic"><div class="ins-label">Liquidity Risk Score</div><span class="badge bg">Low</span></div>
+            <div class="ins-value cg" id="cfo-risk">2 / 10</div>
+            <div class="ins-delta du">▲ Improved from 3 yesterday</div>
+            <div class="ins-sub">1 active risk item</div>
+          </div>
+          <div class="insight-card">
+            <div class="flex jb aic"><div class="ins-label">Forecast Accuracy</div><span class="pill pill-h">● High</span></div>
+            <div class="ins-value" id="cfo-acc">91.2%</div>
+            <div class="ins-delta du">▲ +1.3% vs prior period</div>
+            <div class="ins-sub">Prior 7-day window</div>
+          </div>
+        </div>
+        <div style="background:var(--elv);border:1px solid var(--b0);border-radius:var(--rmd);padding:14px">
+          <div class="xs up cm mb3">7-Day Cash Trend (USD eq.)</div>
+          <div style="position:relative;height:150px"><canvas id="cfo-trend-c"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── CFO REPORT ── -->
+    <div class="report-wrap">
+      <div class="rep-cover">
+        <div class="flex jb">
+          <div><div style="font-size:11px;opacity:.6;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px">Core Fintech · Core Cash Agent</div><div class="rep-title">Daily Cash &amp; Liquidity Report</div><div class="rep-sub">26 JUNE 2026 · FORECAST VERSION 4 · AGENT RUN 09:14 UTC</div></div>
+          <div><div style="background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.25);font-size:11px;padding:2px 8px;border-radius:10px;font-weight:700">Conf: HIGH</div></div>
+        </div>
+        <div class="rep-stats">
+          <div class="rcs"><span class="rcs-l">Total Cash</span><span class="rcs-v">$12.84M</span></div>
+          <div class="rcs"><span class="rcs-l">Usable Cash</span><span class="rcs-v">$9.44M</span></div>
+          <div class="rcs"><span class="rcs-l">7-Day Forecast</span><span class="rcs-v">$9.10M</span></div>
+          <div class="rcs"><span class="rcs-l">Status</span><span class="rcs-v">Normal</span></div>
+          <div class="rcs"><span class="rcs-l">Attention Items</span><span class="rcs-v">1</span></div>
+        </div>
+      </div>
+      <div class="rep-body">
+        <div class="rep-sec"><div class="rep-sec-title">1 · Executive Summary</div><div class="rep-text">Cash position is <strong>Normal</strong> as of 26 June 2026. Total consolidated cash stands at <strong>$12.84M</strong> across 3 legal entities, 6 banks and 14 accounts. The 7-day forecast closing balance is <strong>$9.10M</strong> — improving trend driven by expected AR collections. <strong>One item requires management attention:</strong> EU Entity EUR reserve account is €70K below minimum threshold and requires funding before end of business today to cover AP due Friday 28 June.</div></div>
+        <div class="rep-sec"><div class="rep-sec-title">2 · Cash Position</div>
+          <div class="rep-row"><span class="rep-rl">Total Cash (USD equivalent)</span><span class="rep-rv">$12,840,000</span></div>
+          <div class="rep-row"><span class="rep-rl">Usable Cash (excl. restricted)</span><span class="rep-rv">$9,440,000</span></div>
+          <div class="rep-row"><span class="rep-rl">Restricted Cash</span><span class="rep-rv">$3,400,000</span></div>
+          <div class="rep-row"><span class="rep-rl">USD — US HQ</span><span class="rep-rv">$8,640,000</span></div>
+          <div class="rep-row"><span class="rep-rl">GBP — UK Operations</span><span class="rep-rv">£3,120,000</span></div>
+          <div class="rep-row" style="background:var(--amber-lt);border-radius:var(--rsm);padding:6px 8px;margin-top:4px"><span class="rep-rl ca w600">EUR — EU Entity ⚠ Below threshold</span><span class="rep-rv ca">€430,000</span></div>
+        </div>
+        <div class="rep-sec"><div class="rep-sec-title">3 · Forecast Outlook</div>
+          <div class="rep-row"><span class="rep-rl">7-Day Closing Balance</span><span class="rep-rv cg">$9,100,000 ▲</span></div>
+          <div class="rep-row"><span class="rep-rl">30-Day Closing Balance</span><span class="rep-rv">$6,200,000</span></div>
+          <div class="rep-row"><span class="rep-rl">60-Day Closing Balance</span><span class="rep-rv">$7,800,000</span></div>
+          <div class="rep-row"><span class="rep-rl">Lowest Cash Point (30-day)</span><span class="rep-rv ca">$4,100,000 — Week 2 (7–11 Jul)</span></div>
+          <div class="rep-row"><span class="rep-rl">Forecast Confidence</span><span class="rep-rv"><span class="pill pill-h">● High</span></span></div>
+        </div>
+        <div class="rep-sec"><div class="rep-sec-title">4 · Actions Required</div>
+          <div class="act-item act-u"><div class="act-num num-u">1</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--amber)">Fund EU Entity EUR Reserve — by 15:00 CET today</div><div class="rep-text" style="font-size:12px;margin-top:3px">Transfer EUR 200K to BofA EUR Reserve (****7712). Options: intercompany facility or FX from HSBC GBP pool. <strong>Owner: Finance Director.</strong></div></div><div style="flex-shrink:0"><span class="badge ba">Urgent</span><div class="xs cm mono mt2">Cut-off: 15:00 CET</div></div></div>
+          <div class="act-item act-n"><div class="act-num num-n">2</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--blue)">Resolve Barclays Stale Balance</div><div class="rep-text" style="font-size:12px;margin-top:3px">Statement not received 2 days. Contact Barclays treasury services. <strong>Owner: Treasury Analyst.</strong></div></div><span class="badge bb" style="flex-shrink:0">Normal</span></div>
+          <div class="act-item act-n"><div class="act-num num-n">3</div><div style="flex:1"><div style="font-size:12px;font-weight:700;color:var(--blue)">Resolve 3 Unmapped AR Counterparties</div><div class="rep-text" style="font-size:12px;margin-top:3px">3 AR lines (~$140K) unmatched. Review in Account Master. <strong>Owner: Treasury Analyst.</strong></div></div><span class="badge bb" style="flex-shrink:0">Normal</span></div>
+        </div>
+        <div class="rep-sec"><div class="rep-sec-title">5 · Variance Explanation — 19–25 Jun</div><div class="rep-text">Total variance –$340K (unfavourable). Main driver: Customer A invoice delayed 5 days (–$340K). Partially offset by Vendor B early AP settlement (+$140K). Two items (~$140K) within ±3-day tolerance. <strong>Forecast accuracy: 91.2%.</strong></div></div>
+        <div class="rep-sec"><div class="rep-sec-title">6 · Data Caveats</div><div class="rep-text">Barclays GBP Ops (****1122) balance 2 days stale — UK Ops forecast confidence reduced to Medium. 3 AR counterparties unmapped — inflows may be understated ~$140K. All other feeds received within normal daily window. Manual assumptions version 4 applies.</div></div>
+        <div class="rep-sec"><div class="rep-sec-title">7 · Source References</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">
+            <div class="rep-row"><span class="rep-rl">Bank Balances</span><span class="xs mono cm">bank_balances_26jun.csv · 09:02</span></div>
+            <div class="rep-row"><span class="rep-rl">AR Data</span><span class="xs mono cm">ar_aging_26jun.xlsx · 08:50</span></div>
+            <div class="rep-row"><span class="rep-rl">AP Data</span><span class="xs mono cm">ap_schedule_26jun.xlsx · 08:45</span></div>
+            <div class="rep-row"><span class="rep-rl">Assumptions</span><span class="xs mono cm">assumptions_v4.xlsx · 08:30</span></div>
+            <div class="rep-row"><span class="rep-rl">Agent Run ID</span><span class="xs mono cm">RUN-20260626-0914-A5</span></div>
+          </div>
+        </div>
+        <div class="div"></div>
+        <div class="xs cm" style="text-align:center;line-height:1.7">Generated by Core Cash Agent (Agent 5) · All recommendations require human approval · Core Fintech · Internal &amp; Confidential · 26 June 2026</div>
+      </div>
+    </div>
+  </main>
+  <aside class="ai-panel">
+    <div class="panel-hdr"><div class="pulse"></div><div class="panel-title">Cash Agent · AI</div><div class="live-badge" style="margin-left:6px"><div class="pulse" style="width:5px;height:5px"></div>Live</div><button class="chat-toggle-btn" style="margin-left:auto" onclick="toggleChat(this)" title="Collapse chat">›</button></div>
+    <div class="chat-msgs" id="cfo-msgs">
+      <div class="cmsg agent"><div class="cbubble">CFO Summary ready. <strong>1 action required</strong> — EU Entity EUR funding by 15:00 CET today. All other positions healthy. Shall I draft the distribution email?</div><div class="cts">09:14</div></div>
+      <div class="cmsg agent"><div class="chart-bub"><div class="mini-lbl">Cash — Last 6 Days ($M)</div><div class="mini-bars"><div class="mbar" style="height:75%"><span class="mbar-lbl">Mon</span></div><div class="mbar" style="height:70%"></div><div class="mbar" style="height:82%"></div><div class="mbar" style="height:78%"></div><div class="mbar" style="height:85%"></div><div class="mbar good" style="height:92%"><span class="mbar-lbl">Today</span></div></div><div style="margin-top:20px;font-size:11px;color:var(--t2)">Trend: ▲ Improving · $12.84M today</div></div><div class="cts">09:14</div></div>
+    </div>
+    <div class="chat-inp-wrap">
+      <div class="flex g2 mb3" style="flex-wrap:wrap">
+        <button class="btn btn-g" style="font-size:10px;padding:3px 8px;border:1px solid var(--b1)" onclick="cfoSug('Draft the CFO email')">Draft email</button>
+        <button class="btn btn-g" style="font-size:10px;padding:3px 8px;border:1px solid var(--b1)" onclick="cfoSug('Explain EU Entity risk')">EU risk</button>
+        <button class="btn btn-g" style="font-size:10px;padding:3px 8px;border:1px solid var(--b1)" onclick="cfoSug('What changed vs yesterday?')">vs Yesterday</button>
+      </div>
+      <div class="chat-inp-row"><textarea class="chat-inp" id="cfo-in" placeholder="Ask about the CFO report…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat('cfo');}"></textarea><button class="btn-voice">🎙</button><button class="btn-send" onclick="sendChat('cfo')">↑</button></div>
+      <div class="disc">Agent reads validated data only · Actions require approval</div>
+    </div>
+  </aside>
+</div>
+</div>
+<!-- ═══ DAILY BRIEFING ═══ -->
+<div id="pg-briefing" class="pg">
+<div class="shell panel">
+  <header class="topbar">
+    <div class="t-logo" onclick="goTo('dashboard')"><div class="logo-mark">CC</div>Core Cash Agent</div>
+    <div class="t-stats"><div class="tst"><span class="tst-l">Total Cash</span><span class="tst-v">$12.84M</span></div><div class="tst"><span class="tst-l">Liquidity</span><span class="tst-v pos">Normal</span></div><div class="tst"><span class="tst-l">Items Ahead</span><span class="tst-v warn">2 open</span></div><div class="tst"><span class="tst-l">Briefing Window</span><span class="tst-v">±4 days</span></div></div>
+    <div class="t-right"><span class="as-of">AS OF 26 JUN 2026 · 09:14</span><button class="btn-icon">⟳</button><div class="avatar">JD</div></div>
+  </header>
+  <nav class="sidebar">
+    <div class="sb-toggle" onclick="toggleSidebar(this)" title="Collapse sidebar">‹</div>
+    <div class="nav-sec">Main</div>
+    <div class="nav-item" onclick="goTo('dashboard')"><span class="nav-icon">◉</span><span class="nav-label">Dashboard</span><span class="nav-tip">Dashboard</span></div>
+    <div class="nav-item" onclick="goTo('uploads')"><span class="nav-icon">↑</span><span class="nav-label">Uploads</span><span class="nav-badge">1</span><span class="nav-tip">Uploads</span></div>
+    <div class="nav-item" onclick="goTo('uploads');setTimeout(()=>swUpTab('accounts'),80)"><span class="nav-icon">≡</span><span class="nav-label">Account Master</span><span class="nav-tip">Account Master</span></div>
+    <div class="nav-sec">Analysis</div>
+    <div class="nav-item" onclick="goTo('forecast')"><span class="nav-icon">⌁</span><span class="nav-label">Forecast</span><span class="nav-tip">Forecast</span></div>
+    <div class="nav-item" onclick="goTo('forecast');setTimeout(()=>{const el=document.getElementById('variance-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-forecast .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">△</span><span class="nav-label">Variance</span><span class="nav-tip">Variance</span></div>
+    <div class="nav-item" onclick="goTo('dashboard');setTimeout(()=>{const el=document.getElementById('liquidity-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-dashboard .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">⚡</span><span class="nav-label">Liquidity Risk</span><span class="nav-badge">2</span><span class="nav-tip">Liquidity Risk</span></div>
+    <div class="nav-sec">Reports</div>
+    <div class="nav-item" onclick="goTo('cfo')"><span class="nav-icon">□</span><span class="nav-label">CFO Summary</span><span class="nav-tip">CFO Summary</span></div>
+    <div class="nav-item active" onclick="goTo('briefing')"><span class="nav-icon">☀</span><span class="nav-label">Daily Briefing</span><span class="nav-tip">Daily Briefing</span></div>
+    <div class="nav-item" onclick="goTo('trends')"><span class="nav-icon">⟴</span><span class="nav-label">Trends &amp; History</span><span class="nav-tip">Trends &amp; History</span></div>
+    <div style="flex:1"></div>
+    <div class="sb-footer"><div class="sb-footer-lbl">Briefing Info</div><div class="sb-row"><span class="sb-n">Generated</span><span class="sb-v">09:14</span></div><div class="sb-row"><span class="sb-n">Window</span><span class="sb-v">±4 days</span></div><div class="sb-row"><span class="sb-n">Open items</span><span class="sb-v ca">2</span></div></div>
+    <div class="nav-item" style="margin-top:4px"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span><span class="nav-tip">Settings</span></div>
+  </nav>
+  <main class="main">
+    <div class="phdr">
+      <div><div class="ptitle">Daily Briefing</div><div class="psub">FOR LEADERSHIP DISCUSSION · 26 JUN 2026 · PLAIN-TEXT POINTERS</div></div>
+      <div class="pacts noprint">
+        <button class="btn btn-s" style="font-size:11px" onclick="toast('Copied','Briefing text copied — ready to paste into Slack or email.','ok')">⧉ Copy as Text</button>
+        <button class="btn btn-p" style="font-size:11px" onclick="toast('Email drafted','Daily briefing email draft created.','ok')">✉ Send to Team</button>
+      </div>
+    </div>
+
+    <div class="brief-wrap">
+      <div class="brief-hero">
+        <div class="brief-hero-eyebrow">Core Cash Agent · Daily Briefing</div>
+        <div class="brief-hero-title">What you need for today's conversations</div>
+        <div class="brief-hero-sub">22–30 JUNE 2026 · GENERATED 09:14 UTC · AGENT 5</div>
+      </div>
+      <div class="brief-body">
+
+        <!-- BEHIND US -->
+        <div class="brief-half">
+          <div class="brief-half-label">
+            <span class="brief-half-tag tag-behind">Behind Us</span>
+            <span class="brief-half-title">Last 4 Days</span>
+            <span class="brief-half-range">22–25 JUN</span>
+          </div>
+
+          <div class="brief-day">
+            <div class="brief-day-date">Mon 22 Jun</div>
+            <div class="brief-day-text">Cash position opened the week at <strong>$12.1M</strong>, broadly in line with plan. UK Operations received the expected £420K rent inflow on schedule — no surprises.</div>
+          </div>
+
+          <div class="brief-day">
+            <div class="brief-day-date">Tue 23 Jun</div>
+            <div class="brief-day-text"><strong>Customer A's $340K receivable, expected this day, did not arrive.</strong> This is the same customer that ran 4–6 days late in two of the last three months — a pattern worth raising with sales/AR if it continues.</div>
+          </div>
+
+          <div class="brief-day">
+            <div class="brief-day-date">Wed 24 Jun</div>
+            <div class="brief-day-text">Barclays GBP Ops statement feed went stale and has not refreshed since. UK Operations confidence is now Medium rather than High — not urgent, but worth a call to the bank if it's not resolved by tomorrow.</div>
+          </div>
+
+          <div class="brief-day">
+            <div class="brief-day-date">Thu 25 Jun</div>
+            <div class="brief-day-text">Vendor B settled an AP invoice 6 days early, releasing <strong>+$140K</strong> back into US HQ cash sooner than modelled — a small favourable offset to the Customer A delay.</div>
+          </div>
+
+          <div class="brief-day today">
+            <div class="brief-day-date today">Fri 26 Jun</div>
+            <div class="brief-day-text"><strong>Today:</strong> Total cash is $12.84M, Normal status. The one open item is the EU Entity EUR reserve, which sits €70K below its minimum threshold.</div>
+            <div class="brief-precedent"><span class="brief-precedent-icon">◷</span>Last time this happened (14 Mar 2026), treasury resolved it via an FX transfer from the GBP pool, completed same-day before the 15:00 CET cut-off.</div>
+          </div>
+        </div>
+
+        <div class="div"></div>
+
+        <!-- AHEAD OF US -->
+        <div class="brief-half">
+          <div class="brief-half-label">
+            <span class="brief-half-tag tag-ahead">Ahead of Us</span>
+            <span class="brief-half-title">Next 4 Days</span>
+            <span class="brief-half-range">26–30 JUN</span>
+          </div>
+
+          <div class="brief-day">
+            <div class="brief-day-date today">Today</div>
+            <div class="brief-day-text"><strong>Action needed by 15:00 CET:</strong> Fund the EU Entity EUR reserve (~€200K) before Friday's €120K AP run pushes the account further below minimum. Owner: Finance Director. No board visibility needed — this is a routine treasury action, not a liquidity event.</div>
+          </div>
+
+          <div class="brief-day">
+            <div class="brief-day-date">Sat–Sun</div>
+            <div class="brief-day-text">No scheduled flows. Weekend balance should hold steady around $12.8M pending Monday's payroll run.</div>
+          </div>
+
+          <div class="brief-day">
+            <div class="brief-day-date">Mon 29 Jun</div>
+            <div class="brief-day-text">Barclays statement should auto-resolve over the weekend; if it's still stale Monday morning, that's the trigger to escalate to the bank directly rather than wait further.</div>
+          </div>
+
+          <div class="brief-day">
+            <div class="brief-day-date">Tue 30 Jun</div>
+            <div class="brief-day-text"><strong>Q2 tax reserve outflow of $280K</strong> is scheduled — already modelled into the forecast, no action required, flagging for awareness only since it's the largest single outflow this week.</div>
+          </div>
+
+          <div class="brief-outlook">
+            <div class="brief-outlook-label">If nothing changes</div>
+            Assuming the EUR funding completes today and Customer A's payment arrives within its typical delay window, cash position should remain in <strong>Normal range through the end of next week</strong>, with the only watch item being whether Barclays connectivity self-resolves over the weekend.
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </main>
+  <aside class="ai-panel">
+    <div class="panel-hdr"><div class="pulse"></div><div class="panel-title">Cash Agent · AI</div><button class="panel-collapse-btn" style="margin-left:auto" onclick="togglePanel(this)" title="Collapse panel">›</button></div>
+    <div class="chat-msgs" id="briefing-msgs">
+      <div class="cmsg agent"><div class="cbubble">This briefing covers 22–30 Jun. Two things worth your attention: the <strong>EUR funding due today</strong>, and <strong>Customer A's recurring AR delay pattern</strong> — that's now 2 of the last 3 months. Want me to draft a note to sales/AR about it?</div><div class="cts">09:14</div></div>
+    </div>
+    <div class="chat-inp-wrap"><div class="chat-inp-row"><textarea class="chat-inp" id="briefing-in" placeholder="Ask about this briefing…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat('briefing');}"></textarea><button class="btn-voice">🎙</button><button class="btn-send" onclick="sendChat('briefing')">↑</button></div><div class="disc">Agent reads validated data only · Actions require approval</div></div>
+  </aside>
+</div>
+</div>
+
+<!-- ═══ TRENDS & HISTORY ═══ -->
+<div id="pg-trends" class="pg">
+<div class="shell panel">
+  <header class="topbar">
+    <div class="t-logo" onclick="goTo('dashboard')"><div class="logo-mark">CC</div>Core Cash Agent</div>
+    <div class="t-stats"><div class="tst"><span class="tst-l">Total Cash</span><span class="tst-v">$12.84M</span></div><div class="tst"><span class="tst-l">YoY Cash Δ</span><span class="tst-v pos">+18.4%</span></div><div class="tst"><span class="tst-l">6-Mo Risk Events</span><span class="tst-v warn">4</span></div><div class="tst"><span class="tst-l">Active Signals</span><span class="tst-v">3</span></div></div>
+    <div class="t-right"><span class="as-of">AS OF 26 JUN 2026 · 09:14</span><button class="btn-icon">⟳</button><div class="avatar">JD</div></div>
+  </header>
+  <nav class="sidebar">
+    <div class="sb-toggle" onclick="toggleSidebar(this)" title="Collapse sidebar">‹</div>
+    <div class="nav-sec">Main</div>
+    <div class="nav-item" onclick="goTo('dashboard')"><span class="nav-icon">◉</span><span class="nav-label">Dashboard</span><span class="nav-tip">Dashboard</span></div>
+    <div class="nav-item" onclick="goTo('uploads')"><span class="nav-icon">↑</span><span class="nav-label">Uploads</span><span class="nav-badge">1</span><span class="nav-tip">Uploads</span></div>
+    <div class="nav-item" onclick="goTo('uploads');setTimeout(()=>swUpTab('accounts'),80)"><span class="nav-icon">≡</span><span class="nav-label">Account Master</span><span class="nav-tip">Account Master</span></div>
+    <div class="nav-sec">Analysis</div>
+    <div class="nav-item" onclick="goTo('forecast')"><span class="nav-icon">⌁</span><span class="nav-label">Forecast</span><span class="nav-tip">Forecast</span></div>
+    <div class="nav-item" onclick="goTo('forecast');setTimeout(()=>{const el=document.getElementById('variance-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-forecast .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">△</span><span class="nav-label">Variance</span><span class="nav-tip">Variance</span></div>
+    <div class="nav-item" onclick="goTo('dashboard');setTimeout(()=>{const el=document.getElementById('liquidity-section');if(el){const main=el.closest('.main')||document.querySelector('#pg-dashboard .main');if(main)main.scrollTo({top:el.offsetTop-20,behavior:'smooth'});}},200)"><span class="nav-icon">⚡</span><span class="nav-label">Liquidity Risk</span><span class="nav-badge">2</span><span class="nav-tip">Liquidity Risk</span></div>
+    <div class="nav-sec">Reports</div>
+    <div class="nav-item" onclick="goTo('cfo')"><span class="nav-icon">□</span><span class="nav-label">CFO Summary</span><span class="nav-tip">CFO Summary</span></div>
+    <div class="nav-item" onclick="goTo('briefing')"><span class="nav-icon">☀</span><span class="nav-label">Daily Briefing</span><span class="nav-tip">Daily Briefing</span></div>
+    <div class="nav-item active" onclick="goTo('trends')"><span class="nav-icon">⟴</span><span class="nav-label">Trends &amp; History</span><span class="nav-tip">Trends &amp; History</span></div>
+    <div style="flex:1"></div>
+    <div class="sb-footer"><div class="sb-footer-lbl">History Window</div><div class="sb-row"><span class="sb-n">Range</span><span class="sb-v">6 months</span></div><div class="sb-row"><span class="sb-n">YoY base</span><span class="sb-v">Q2 2025</span></div><div class="sb-row"><span class="sb-n">Signals</span><span class="sb-v cb">3 active</span></div></div>
+    <div class="nav-item" style="margin-top:4px"><span class="nav-icon">⚙</span><span class="nav-label">Settings</span><span class="nav-tip">Settings</span></div>
+  </nav>
+  <main class="main">
+    <div class="phdr">
+      <div><div class="ptitle">Trends &amp; History</div><div class="psub">6-MONTH PATTERN VIEW · YoY COMPARISON · AGENT 6 · 26 JUN 2026</div></div>
+      <div class="pacts noprint">
+        <button class="btn btn-s" style="font-size:11px">↓ Export</button>
+        <button class="btn btn-p" style="font-size:11px" onclick="toast('Refreshed','Trend analysis re-run across 6-month window.','ok')">⟳ Refresh Analysis</button>
+      </div>
+    </div>
+
+    <!-- 1. YoY -->
+    <div class="trend-sec">
+      <div class="trend-sec-hdr"><div class="trend-sec-num">1</div><div class="trend-sec-title">Year-over-Year — Same Quarter Comparison</div><div class="trend-sec-sub">Q2 2026 vs Q2 2025</div></div>
+      <div class="yoy-grid">
+        <div class="yoy-card"><div class="yoy-label">Average Cash Position</div><div class="yoy-compare"><span class="yoy-this">$12.4M</span><span class="yoy-last">vs $10.5M</span></div><div class="yoy-delta du">▲ +18.4% YoY</div></div>
+        <div class="yoy-card"><div class="yoy-label">Liquidity Risk Incidents</div><div class="yoy-compare"><span class="yoy-this">4</span><span class="yoy-last">vs 9</span></div><div class="yoy-delta du">▲ –56% fewer incidents</div></div>
+        <div class="yoy-card"><div class="yoy-label">Forecast Accuracy (avg)</div><div class="yoy-compare"><span class="yoy-this">90.8%</span><span class="yoy-last">vs 84.2%</span></div><div class="yoy-delta du">▲ +6.6pp improvement</div></div>
+      </div>
+    </div>
+
+    <!-- 2. Benchmark vs self -->
+    <div class="trend-sec">
+      <div class="trend-sec-hdr"><div class="trend-sec-num">2</div><div class="trend-sec-title">Benchmarked Against Our Own History</div><div class="trend-sec-sub">90-DAY ROLLING AVERAGE</div></div>
+      <div class="sc">
+        <div class="sc-body">
+          <div class="bench-row"><div class="bench-label">Days Sales Outstanding</div><div class="bench-bar-wrap"><div class="bench-bar-fill" style="width:58%;background:var(--green)"></div><div class="bench-marker" style="left:64%"></div></div><div class="bench-val">42 days</div><div class="bench-note cg">4 days faster than avg</div></div>
+          <div class="bench-row"><div class="bench-label">Cash Conversion Cycle</div><div class="bench-bar-wrap"><div class="bench-bar-fill" style="width:52%;background:var(--green)"></div><div class="bench-marker" style="left:58%"></div></div><div class="bench-val">31 days</div><div class="bench-note cg">3 days faster than avg</div></div>
+          <div class="bench-row"><div class="bench-label">Avg Days Below Min Threshold</div><div class="bench-bar-wrap"><div class="bench-bar-fill" style="width:18%;background:var(--amber)"></div><div class="bench-marker" style="left:25%"></div></div><div class="bench-val">1.2 days</div><div class="bench-note ca">Slightly better than avg</div></div>
+          <div class="bench-row"><div class="bench-label">Forecast Variance (abs avg)</div><div class="bench-bar-wrap"><div class="bench-bar-fill" style="width:34%;background:var(--blue)"></div><div class="bench-marker" style="left:40%"></div></div><div class="bench-val">$210K</div><div class="bench-note cg">Tighter than 90-day avg</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 6-month history -->
+    <div class="trend-sec">
+      <div class="trend-sec-hdr"><div class="trend-sec-num">3</div><div class="trend-sec-title">6-Month Historical View</div><div class="trend-sec-sub">JAN – JUN 2026</div></div>
+      <div style="position:relative;height:200px;background:var(--sur);border:1px solid var(--b0);border-radius:var(--rmd);box-shadow:var(--shc);padding:16px">
+        <canvas id="trend-6mo-c"></canvas>
+      </div>
+    </div>
+
+    <!-- 4. Surprise ledger -->
+    <div class="trend-sec">
+      <div class="trend-sec-hdr"><div class="trend-sec-num">4</div><div class="trend-sec-title">Surprise Inflows, Outflows &amp; Manual Assumptions Log</div><div class="trend-sec-sub">LAST 6 MONTHS</div></div>
+      <div class="sc">
+        <div class="sc-body">
+          <div class="ledger-row"><div class="ledger-month">Jun</div><div class="ledger-body"><div class="ledger-title">Customer A AR delay</div><div class="ledger-desc">5-day delay on $340K receivable — 3rd occurrence in 6 months from this counterparty.</div></div><div class="ledger-amt cr">–$340K</div></div>
+          <div class="ledger-row"><div class="ledger-month">May</div><div class="ledger-body"><div class="ledger-title">Unbudgeted legal settlement</div><div class="ledger-desc">One-off outflow, not in original forecast — manual assumption added retroactively.</div></div><div class="ledger-amt cr">–$185K</div></div>
+          <div class="ledger-row"><div class="ledger-month">Apr</div><div class="ledger-body"><div class="ledger-title">Customer A AR delay</div><div class="ledger-desc">4-day delay on $290K receivable — 2nd occurrence.</div></div><div class="ledger-amt cr">–$290K</div></div>
+          <div class="ledger-row"><div class="ledger-month">Mar</div><div class="ledger-body"><div class="ledger-title">Early customer prepayment</div><div class="ledger-desc">GlobalTech Ltd prepaid Q2 invoice 3 weeks early — favourable surprise, no pattern yet.</div></div><div class="ledger-amt cg">+$410K</div></div>
+          <div class="ledger-row"><div class="ledger-month">Feb</div><div class="ledger-body"><div class="ledger-title">EUR threshold breach &amp; FX transfer</div><div class="ledger-desc">Same root cause as today's open item — resolved via GBP pool FX in 1 day.</div></div><div class="ledger-amt ca">€180K moved</div></div>
+          <div class="ledger-row"><div class="ledger-month">Jan</div><div class="ledger-body"><div class="ledger-title">Vendor B early settlement</div><div class="ledger-desc">First occurrence of early AP settlement — now a recurring favourable pattern.</div></div><div class="ledger-amt cg">+$140K</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. Quiet creep -->
+    <div class="trend-sec">
+      <div class="trend-sec-hdr"><div class="trend-sec-num">5</div><div class="trend-sec-title">Things That Quietly Got Worse</div><div class="trend-sec-sub">NOT YET ALERT-TRIGGERING</div></div>
+      <div class="creep-item">
+        <div class="creep-icon">◢</div>
+        <div style="flex:1">
+          <div class="creep-title">EU Entity buffer above minimum has shrunk in 4 of the last 5 weeks</div>
+          <div class="creep-desc">Still above threshold each week, but the margin is narrowing — €210K → €165K → €110K → €95K → €70K today. No single week triggered an alert; the trend did.</div>
+          <div class="creep-spark">
+            <div class="creep-spark-bar" style="height:24px"></div><div class="creep-spark-bar" style="height:19px"></div><div class="creep-spark-bar" style="height:13px"></div><div class="creep-spark-bar" style="height:11px"></div><div class="creep-spark-bar" style="height:8px"></div>
+          </div>
+        </div>
+      </div>
+      <div class="creep-item">
+        <div class="creep-icon">◢</div>
+        <div style="flex:1">
+          <div class="creep-title">UK Operations data confidence has dipped to Medium 3 times this quarter</div>
+          <div class="creep-desc">Each instance was a stale Barclays feed lasting 1–3 days. Individually minor; cumulatively this is now the most frequent data-quality issue across all entities.</div>
+        </div>
+      </div>
+      <div class="creep-item">
+        <div class="creep-icon">◢</div>
+        <div style="flex:1">
+          <div class="creep-title">Forecast variance on AR has widened slightly each of the last 3 months</div>
+          <div class="creep-desc">±$140K → ±$190K → ±$240K. Still within tolerance, but the direction is consistent and tracks with Customer A's growing share of AR.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. Concentration -->
+    <div class="trend-sec">
+      <div class="trend-sec-hdr"><div class="trend-sec-num">6</div><div class="trend-sec-title">Counterparty Concentration &amp; Behavior Drift</div><div class="trend-sec-sub">SHARE OF TOTAL AR RISK</div></div>
+      <div class="sc">
+        <div class="sc-body">
+          <div class="conc-bar-row"><div class="conc-name">Customer A</div><div class="conc-bar-wrap"><div class="conc-bar-seg" style="width:34%;background:var(--red)"></div><div class="conc-bar-seg" style="width:66%;background:var(--b0)"></div></div><div class="conc-pct cr">34%</div></div>
+          <div class="conc-bar-row"><div class="conc-name">GlobalTech Ltd</div><div class="conc-bar-wrap"><div class="conc-bar-seg" style="width:21%;background:var(--blue)"></div><div class="conc-bar-seg" style="width:79%;background:var(--b0)"></div></div><div class="conc-pct cb">21%</div></div>
+          <div class="conc-bar-row"><div class="conc-name">Nordic AS</div><div class="conc-bar-wrap"><div class="conc-bar-seg" style="width:14%;background:var(--blue)"></div><div class="conc-bar-seg" style="width:86%;background:var(--b0)"></div></div><div class="conc-pct cb">14%</div></div>
+          <div class="conc-bar-row"><div class="conc-name">All other (12 accounts)</div><div class="conc-bar-wrap"><div class="conc-bar-seg" style="width:31%;background:var(--tm)"></div><div class="conc-bar-seg" style="width:69%;background:var(--b0)"></div></div><div class="conc-pct cm">31%</div></div>
+          <div class="div" style="margin:14px 0 10px"></div>
+          <div style="font-size:12px;color:var(--t2);line-height:1.7"><strong style="color:var(--t1)">Top 3 counterparties now represent 69% of AR risk</strong>, up from 58% the same quarter last year. Customer A's share has grown from 19% to 34% — concentration is increasing, not just the absolute delay pattern.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. Predictions -->
+    <div class="trend-sec">
+      <div class="trend-sec-hdr"><div class="trend-sec-num">7</div><div class="trend-sec-title">Predictions &amp; Pattern-Based Signals</div><div class="trend-sec-sub">NOT FORECAST OUTPUT — SEPARATE BASIS</div></div>
+      <div class="signal-card">
+        <div class="signal-hdr"><div class="signal-tag">◆ Pattern Signal</div><span class="signal-conf">Moderate confidence</span></div>
+        <div class="signal-text">Customer A is likely to be late again on its July invoice, based on a recurring 4–6 day delay pattern observed in 3 of the last 4 months.</div>
+        <div class="signal-basis"><span class="signal-basis-label">Basis</span>3 of 4 prior occurrences followed this pattern; no contract or relationship change on file that would explain a deviation.</div>
+      </div>
+      <div class="signal-card">
+        <div class="signal-hdr"><div class="signal-tag">◆ Pattern Signal</div><span class="signal-conf">Lower confidence</span></div>
+        <div class="signal-text">EU Entity may breach its EUR minimum threshold again within 4–6 weeks if the current weekly buffer-erosion trend continues at its present rate.</div>
+        <div class="signal-basis"><span class="signal-basis-label">Basis</span>Linear extrapolation of 5-week buffer decline; assumes no manual intervention or change in EUR inflow timing.</div>
+      </div>
+      <div class="signal-card">
+        <div class="signal-hdr"><div class="signal-tag">◆ Pattern Signal</div><span class="signal-conf">Moderate confidence</span></div>
+        <div class="signal-text">Vendor B's early-settlement behavior appears to be becoming a consistent pattern rather than a one-off, which could be modelled into baseline assumptions going forward.</div>
+        <div class="signal-basis"><span class="signal-basis-label">Basis</span>2 consecutive early settlements in the last 2 months, both 5+ days ahead of due date.</div>
+      </div>
+    </div>
+
+    <!-- 8. Stress lines -->
+    <div class="trend-sec">
+      <div class="trend-sec-hdr"><div class="trend-sec-num">8</div><div class="trend-sec-title">Scenario Stress Lines</div><div class="trend-sec-sub">LIGHTWEIGHT CONDITIONALS</div></div>
+      <div class="sc">
+        <div class="sc-body" style="padding-top:4px">
+          <div class="stress-line"><div class="stress-if">If</div><div class="stress-text">Customer A's delay pattern continues into Q3, <strong>30-day forecast confidence would likely drop from High to Medium</strong> as AR timing becomes the dominant source of variance.</div></div>
+          <div class="stress-line"><div class="stress-if">If</div><div class="stress-text">EU Entity buffer erosion continues at the current weekly rate, <strong>a second threshold breach is plausible within 4–6 weeks</strong> without manual funding intervention.</div></div>
+          <div class="stress-line"><div class="stress-if">If</div><div class="stress-text">Top-3 counterparty concentration keeps growing at its current rate, <strong>a single late payment could begin materially affecting weekly forecast accuracy</strong> within 2 quarters.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 9. Cost of cash -->
+    <div class="trend-sec">
+      <div class="trend-sec-hdr"><div class="trend-sec-num">9</div><div class="trend-sec-title">Cost of Cash</div><div class="trend-sec-sub">OPPORTUNITY COST OF CURRENT POSITIONING</div></div>
+      <div class="cost-strip">
+        <div class="cost-cell"><div class="cost-cell-label">Restricted Cash, Idle</div><div class="cost-cell-val warn">$3.40M</div><div class="cost-cell-sub">Earning 0% · Citi + Barclays</div></div>
+        <div class="cost-cell"><div class="cost-cell-label">Available Sweep Yield</div><div class="cost-cell-val">~4.2%</div><div class="cost-cell-sub">Current market rate, USD</div></div>
+        <div class="cost-cell"><div class="cost-cell-label">Annualised Opportunity Cost</div><div class="cost-cell-val warn">~$143K</div><div class="cost-cell-sub">If restricted cash remains idle for 12mo</div></div>
+        <div class="cost-cell"><div class="cost-cell-label">EUR Funding Friction (today)</div><div class="cost-cell-val">~$340</div><div class="cost-cell-sub">Est. FX + transfer cost, €200K move</div></div>
+      </div>
+    </div>
+
+  </main>
+  <aside class="ai-panel">
+    <div class="panel-hdr"><div class="pulse"></div><div class="panel-title">Cash Agent · AI</div><button class="panel-collapse-btn" style="margin-left:auto" onclick="togglePanel(this)" title="Collapse panel">›</button></div>
+    <div class="chat-msgs" id="trends-msgs">
+      <div class="cmsg agent"><div class="cbubble">Two things stand out over the last 6 months: <strong>Customer A's AR delay is now a confirmed pattern</strong> (3 of 4 months), and <strong>counterparty concentration has grown</strong> from 58% to 69% in your top 3. Want me to model the impact if Customer A is excluded from next quarter's high-confidence forecast?</div><div class="cts">09:14</div></div>
+    </div>
+    <div class="chat-inp-wrap"><div class="chat-inp-row"><textarea class="chat-inp" id="trends-in" placeholder="Ask about trends, patterns, history…" rows="1" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat('trends');}"></textarea><button class="btn-voice">🎙</button><button class="btn-send" onclick="sendChat('trends')">↑</button></div><div class="disc">Agent reads validated data only · Actions require approval</div></div>
+  </aside>
+</div>
+</div>
+
+<!-- ═══ MODALS ═══ -->
+<div class="moverlay" id="modal-risk" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="mhdr"><div class="mtitle">Liquidity Risk Analysis — EU Entity</div><button class="btn-icon" style="width:28px;height:28px;border:none" onclick="document.getElementById('modal-risk').classList.remove('open')">✕</button></div>
+    <div class="mbody">
+      <div class="mb4"><div class="xs up cb bold mb3">Risk Classification</div><div class="scard" style="border-left:3px solid var(--amber)"><div class="sdot sda"></div><div class="slbl-w">Attention Required</div><div class="sdesc">EUR balance €70K below minimum. AP outflow due Friday increases pressure.</div></div></div>
+      <div class="mb4"><div class="xs up cb bold mb3">Projected Impact</div><div style="display:flex;flex-direction:column;gap:6px;font-size:12.5px;color:var(--t2)"><div class="flex jb"><span>Current Balance</span><span class="mono w600 ca">€430,000</span></div><div class="flex jb"><span>Min Threshold</span><span class="mono">€500,000</span></div><div class="flex jb"><span>Current Shortfall</span><span class="mono cr bold">–€70,000</span></div><div class="flex jb"><span>AP Due Fri 28 Jun</span><span class="mono cr">–€120,000</span></div><div class="div" style="margin:4px 0"></div><div class="flex jb"><span>Projected after AP</span><span class="mono cr bold">€310,000</span></div></div></div>
+      <div><div class="xs up cb bold mb3">Recommended Actions</div>
+        <div class="rwhy mb3"><span class="rwhy-l">Option 1</span>Transfer EUR 200K from intercompany EUR facility. No FX risk.</div>
+        <div class="rwhy mb3"><span class="rwhy-l">Option 2</span>FX convert GBP 175K from HSBC GBP Pool. Cut-off 15:00 CET today.</div>
+        <div class="rwhy"><span class="rwhy-l">Option 3</span>EUR credit line drawdown. CFO approval required. Submit before 13:00.</div>
+      </div>
+    </div>
+    <div class="mftr"><button class="btn btn-g" onclick="document.getElementById('modal-risk').classList.remove('open')">Close</button><button class="btn btn-p" onclick="toast('Action drafted','Transfer recommendation sent to treasury team.','ok');document.getElementById('modal-risk').classList.remove('open')">Draft Action Note</button></div>
+  </div>
+</div>
+
+<div class="moverlay" id="modal-assume" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="mhdr"><div class="mtitle">Add Forecast Assumption</div><button class="btn-icon" style="width:28px;height:28px;border:none" onclick="document.getElementById('modal-assume').classList.remove('open')">✕</button></div>
+    <div class="mbody">
+      <div class="g2c mb3"><div class="fg"><label class="flbl">Legal Entity *</label><select class="inp sel"><option>US HQ</option><option>UK Operations</option><option>EU Entity</option></select></div><div class="fg"><label class="flbl">Currency *</label><select class="inp sel"><option>USD</option><option>GBP</option><option>EUR</option></select></div></div>
+      <div class="g2c mb3"><div class="fg"><label class="flbl">Date *</label><input class="inp" type="date" value="2026-07-10"></div><div class="fg"><label class="flbl">Amount *</label><input class="inp" style="font-family:var(--mono)" type="text" placeholder="0.00"></div></div>
+      <div class="g2c mb3"><div class="fg"><label class="flbl">Direction *</label><div class="flex g3 mt2 aic"><label style="display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer"><input type="radio" name="dir" checked> <span class="cr w600">Outflow</span></label><label style="display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer"><input type="radio" name="dir"> <span class="cg w600">Inflow</span></label></div></div><div class="fg"><label class="flbl">Category *</label><select class="inp sel"><option>Payroll</option><option>Tax</option><option>Rent</option><option>AP</option><option>AR</option><option>Intercompany</option><option>Other</option></select></div></div>
+      <div class="fg mb3"><label class="flbl">Description</label><input class="inp" type="text" placeholder="Optional notes"></div>
+      <div class="fg"><label class="flbl">Confidence</label><select class="inp sel"><option>High</option><option selected>Medium</option><option>Low</option></select></div>
+    </div>
+    <div class="mftr"><button class="btn btn-g" onclick="document.getElementById('modal-assume').classList.remove('open')">Cancel</button><button class="btn btn-p" onclick="toast('Assumption added','Forecast updated. Reforecast agent queued.','ok');document.getElementById('modal-assume').classList.remove('open')">Save &amp; Update Forecast</button></div>
+  </div>
+</div>
+
+<div class="moverlay" id="modal-account" onclick="if(event.target===this)this.classList.remove('open')">
+  <div class="modal">
+    <div class="mhdr"><div class="mtitle">Add Account</div><button class="btn-icon" style="width:28px;height:28px;border:none" onclick="document.getElementById('modal-account').classList.remove('open')">✕</button></div>
+    <div class="mbody">
+      <div class="g2c mb3"><div class="fg"><label class="flbl">Account Number *</label><input class="inp" style="font-family:var(--mono)" placeholder="e.g. 12345678"></div><div class="fg"><label class="flbl">Account Name *</label><input class="inp" placeholder="Descriptive name"></div></div>
+      <div class="g2c mb3"><div class="fg"><label class="flbl">Bank *</label><select class="inp sel"><option>JPMorgan</option><option>HSBC</option><option>Citibank</option><option>Bank of America</option><option>Barclays</option><option>Deutsche Bank</option></select></div><div class="fg"><label class="flbl">Legal Entity *</label><select class="inp sel"><option>US HQ</option><option>UK Operations</option><option>EU Entity</option></select></div></div>
+      <div class="g2c mb3"><div class="fg"><label class="flbl">Currency *</label><select class="inp sel"><option>USD</option><option>GBP</option><option>EUR</option></select></div><div class="fg"><label class="flbl">Min Balance Threshold</label><input class="inp" style="font-family:var(--mono)" placeholder="0.00 (optional)"></div></div>
+      <div class="g2c"><div class="fg"><label class="flbl">Include in Cash Position</label><div class="flex aic g2 mt2"><div class="tog on" onclick="this.classList.toggle('on')"></div><span class="xs c2">Yes</span></div></div><div class="fg"><label class="flbl">Restricted Account</label><div class="flex aic g2 mt2"><div class="tog" onclick="this.classList.toggle('on')"></div><span class="xs c2">No</span></div></div></div>
+    </div>
+    <div class="mftr"><button class="btn btn-g" onclick="document.getElementById('modal-account').classList.remove('open')">Cancel</button><button class="btn btn-p" onclick="toast('Account added','New account saved to Account Master.','ok');document.getElementById('modal-account').classList.remove('open')">Save Account</button></div>
+  </div>
+</div>
+
+<div class="toast-area" id="toast-area"></div>
+<script>
+// ── SPA Router ──────────────────────────────────────────────
+const PAGES = ['dashboard','forecast','uploads','cfo','briefing','trends'];
+let curPage = 'dashboard';
+let chartsDone = {};
+
+function goTo(pid) {
+  // Remember current collapse states
+  const anySidebar = document.querySelector('.sidebar');
+  const anyPanel = document.querySelector('.ai-panel');
+  const sbCollapsed = anySidebar && anySidebar.classList.contains('collapsed');
+  const panelCollapsed = anyPanel && anyPanel.classList.contains('collapsed');
+
+  PAGES.forEach(p => {
+    const el = document.getElementById('pg-'+p);
+    if (el) el.style.display = 'none';
+  });
+  const target = document.getElementById('pg-'+pid);
+  if (!target) return;
+  target.style.display = 'contents';
+  curPage = pid;
+
+  // Re-apply collapse states to new page's sidebar/panel
+  setTimeout(() => {
+    const newSidebar = target.querySelector('.sidebar');
+    const newPanel = target.querySelector('.ai-panel');
+    const newShell = target.querySelector('.shell');
+    if (newSidebar && sbCollapsed) {
+      newSidebar.classList.add('collapsed');
+      if (newShell) newShell.classList.add('sb-collapsed');
+    }
+    if (newPanel && panelCollapsed) {
+      newPanel.classList.add('collapsed');
+      if (newShell) newShell.classList.add('panel-collapsed');
+    }
+  }, 10);
+
+  if (!chartsDone[pid]) {
+    chartsDone[pid] = true;
+    setTimeout(() => initChartsFor(pid), 80);
+  }
+}
+
+function initChartsFor(pid) {
+  if (pid === 'forecast') initFcCharts();
+  if (pid === 'cfo') initCfoChart();
+  if (pid === 'trends') initTrendsChart();
+}
+
+// Boot: show dashboard
+goTo('dashboard');
+
+// ── Sidebar collapse ─────────────────────────────────────────────
+function toggleSidebar(btn) {
+  const sidebar = btn.closest('.sidebar');
+  const shell = sidebar.closest('.shell');
+  const collapsed = sidebar.classList.toggle('collapsed');
+  if (collapsed) {
+    shell.classList.add('sb-collapsed');
+  } else {
+    shell.classList.remove('sb-collapsed');
+  }
+}
+
+// ── Panel collapse ────────────────────────────────────────────────
+function togglePanel(btn) {
+  const panel = btn.closest('.ai-panel');
+  const shell = panel.closest('.shell');
+  const collapsed = panel.classList.toggle('collapsed');
+  if (collapsed) {
+    shell.classList.add('panel-collapsed');
+  } else {
+    shell.classList.remove('panel-collapsed');
+  }
+}
+
+// ── Toast ────────────────────────────────────────────────────
+function toast(title, msg, type) {
+  const area = document.getElementById('toast-area');
+  const icons = {ok:'✓', wa:'⚠', er:'✕'};
+  const el = document.createElement('div');
+  el.className = 'toast ' + (type||'ok');
+  el.innerHTML = '<div class="t-icon">'+(icons[type]||'ℹ')+'</div><div style="flex:1"><div class="t-title">'+title+'</div><div class="t-msg">'+msg+'</div></div><div class="t-close" onclick="this.parentElement.remove()">✕</div>';
+  area.appendChild(el);
+  setTimeout(() => { if (el.parentElement) el.remove(); }, 4500);
+}
+
+// ── Dashboard panel switch ───────────────────────────────────
+function swPanel(page, panel) {
+  const exc = document.getElementById(page+'-exc');
+  const chat = document.getElementById(page+'-chat');
+  if (!exc || !chat) return;
+  if (panel === 'chat') {
+    exc.style.display = 'none';
+    chat.style.display = 'flex';
+    chat.style.flexDirection = 'column';
+    chat.style.flex = '1';
+    chat.style.overflow = 'hidden';
+  } else {
+    exc.style.display = 'block';
+    chat.style.display = 'none';
+  }
+}
+
+// ── Table row collapse ───────────────────────────────────────
+function toggleRows(grp, btn) {
+  const rows = document.querySelectorAll('.grp-'+grp);
+  const open = btn.textContent.trim().startsWith('▾');
+  rows.forEach(r => r.style.display = open ? 'none' : '');
+  btn.textContent = btn.textContent.replace(open ? '▾' : '▸', open ? '▸' : '▾');
+}
+
+// ── Upload handler ───────────────────────────────────────────
+function handleUp(e, zone) {
+  const f = e.target.files[0];
+  if (!f) return;
+  toast('Uploading', 'Processing ' + f.name + '…', 'wa');
+  setTimeout(() => toast('Upload complete', f.name + ' validated.', 'ok'), 1500);
+}
+
+// ── Uploads tabs ─────────────────────────────────────────────
+function swUpTab(t) {
+  ['files','mapping','accounts'].forEach(id => {
+    const el = document.getElementById('up-'+id);
+    if (el) el.style.display = 'none';
+  });
+  const el = document.getElementById('up-'+t);
+  if (el) el.style.display = 'block';
+  document.querySelectorAll('#up-tab-bar .tab').forEach((tab, i) => {
+    tab.classList.toggle('active', ['files','mapping','accounts'][i] === t);
+  });
+}
+
+// ── Forecast tab ─────────────────────────────────────────────
+const FC_DATA = [
+  {inf:'2.40M', out:'6.14M', close:'9.10M', warn:false},
+  {inf:'3.20M', out:'9.84M', close:'6.20M', warn:true},
+  {inf:'8.10M', out:'13.14M', close:'7.80M', warn:false}
+];
+function setFcTab(el, idx) {
+  document.querySelectorAll('.fc-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const d = FC_DATA[idx];
+  const inf = document.getElementById('fc-inflows');
+  const out = document.getElementById('fc-outflows');
+  const cl = document.getElementById('fc-close');
+  if (inf) inf.querySelector('.mc-val').innerHTML = '<span class="cur">+$</span>' + d.inf;
+  if (out) out.querySelector('.mc-val').innerHTML = '<span class="cur">–$</span>' + d.out;
+  if (cl)  cl.querySelector('.mc-val').innerHTML  = '<span class="cur">$</span>'  + d.close;
+  const wb = document.getElementById('fc-warn');
+  if (wb) wb.style.display = d.warn ? 'block' : 'none';
+}
+
+// ── Forecast chart toggle ─────────────────────────────────────
+function showFcChart(t) {
+  ['bar','line','wf'].forEach(id => {
+    const el = document.getElementById('fc-chart-'+id);
+    if (el) el.style.display = 'none';
+    const btn = document.getElementById('fc-btn-'+id);
+    if (btn) { btn.className = 'btn btn-s'; btn.style.fontSize='11px'; btn.style.padding='4px 10px'; }
+  });
+  const el = document.getElementById('fc-chart-'+t);
+  if (el) el.style.display = 'block';
+  const btn = document.getElementById('fc-btn-'+t);
+  if (btn) btn.className = 'btn btn-p';
+}
+
+// ── Forecast charts ───────────────────────────────────────────
+function initFcCharts() {
+  const baseOpts = {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' $' + Number(c.raw).toFixed(2) + 'M' } } },
+    scales: {
+      x: { grid: { color: '#E8ECF4' }, ticks: { color: '#9AA3B5', font: { size: 10 } } },
+      y: { grid: { color: '#E8ECF4' }, ticks: { color: '#9AA3B5', font: { size: 10 }, callback: v => v + 'M' } }
+    }
+  };
+  const bar = document.getElementById('fc-bar-c');
+  if (bar && !bar._cc) {
+    bar._cc = new Chart(bar, { type: 'bar', data: {
+      labels: ['26 Jun','27 Jun','28 Jun','29 Jun','30 Jun','1 Jul','2 Jul'],
+      datasets: [
+        { label: 'Inflows',  data: [0.8,1.2,0.2,0.4,0.0,0.5,0.3], backgroundColor: 'rgba(5,150,105,0.7)', borderRadius: 3 },
+        { label: 'Outflows', data: [0.3,2.1,0.9,0.4,0.1,0.8,1.5], backgroundColor: 'rgba(220,38,38,0.6)',  borderRadius: 3 }
+      ]}, options: { ...baseOpts, plugins: { legend: { display: true, labels: { color: '#4B5675', font: { size: 11 }, boxWidth: 12 } }, tooltip: baseOpts.plugins.tooltip } }
+    });
+  }
+  const line = document.getElementById('fc-line-c');
+  if (line && !line._cc) {
+    line._cc = new Chart(line, { type: 'line', data: {
+      labels: ['26 Jun','28 Jun','30 Jun','2 Jul','4 Jul','6 Jul','8 Jul','10 Jul'],
+      datasets: [
+        { label: 'Forecast',      data: [12.84,11.2,10.8,9.9,9.1,7.2,4.1,5.8], borderColor: '#0057D9', backgroundColor: 'rgba(0,87,217,0.08)', tension: .4, borderWidth: 2, pointRadius: 3, fill: true },
+        { label: 'Min Threshold', data: [5,5,5,5,5,5,5,5], borderColor: '#DC2626', borderDash: [4,4], borderWidth: 1.5, pointRadius: 0, fill: false }
+      ]}, options: { ...baseOpts, plugins: { legend: { display: true, labels: { color: '#4B5675', font: { size: 11 }, boxWidth: 12 } }, tooltip: baseOpts.plugins.tooltip } }
+    });
+  }
+}
+
+// ── CFO trend chart ───────────────────────────────────────────
+function initCfoChart() {
+  const el = document.getElementById('cfo-trend-c');
+  if (el && !el._cc) {
+    el._cc = new Chart(el, { type: 'line', data: {
+      labels: ['Mon 20','Tue 21','Wed 22','Thu 23','Fri 24','Mon 26'],
+      datasets: [{ label: 'Cash $M', data: [11.2,11.8,12.1,11.6,12.5,12.84], borderColor: '#0057D9', backgroundColor: 'rgba(0,87,217,0.08)', tension: .4, borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#0057D9', fill: true }]
+    }, options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ' $' + c.raw + 'M' } } },
+      scales: {
+        x: { grid: { color: '#E8ECF4' }, ticks: { color: '#9AA3B5', font: { size: 10 } } },
+        y: { grid: { color: '#E8ECF4' }, ticks: { color: '#9AA3B5', font: { size: 10 }, callback: v => v + 'M' }, min: 10, max: 14 }
+      }
+    }});
+  }
+}
+
+// ── 6-month trend chart (Trends & History) ─────────────────────
+function initTrendsChart() {
+  const el = document.getElementById('trend-6mo-c');
+  if (el && !el._cc) {
+    el._cc = new Chart(el, { type: 'line', data: {
+      labels: ['Jan','Feb','Mar','Apr','May','Jun'],
+      datasets: [
+        { label: 'Cash Position $M', data: [10.9,11.3,12.0,11.7,12.1,12.84], borderColor: '#0057D9', backgroundColor: 'rgba(0,87,217,0.08)', tension: .4, borderWidth: 2.5, pointRadius: 4, pointBackgroundColor: '#0057D9', fill: true, yAxisID: 'y' },
+        { label: 'Risk Incidents', data: [2,1,0,1,0,0], borderColor: '#D97706', borderDash: [4,4], borderWidth: 1.5, pointRadius: 3, pointBackgroundColor: '#D97706', fill: false, yAxisID: 'y1' }
+      ]}, options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: true, labels: { color: '#4B5675', font: { size: 11 }, boxWidth: 12 } }, tooltip: { callbacks: { label: c => c.dataset.label.includes('Cash') ? ' $'+c.raw+'M' : ' '+c.raw+' incident(s)' } } },
+        scales: {
+          x: { grid: { color: '#E8ECF4' }, ticks: { color: '#9AA3B5', font: { size: 10 } } },
+          y: { position: 'left', grid: { color: '#E8ECF4' }, ticks: { color: '#9AA3B5', font: { size: 10 }, callback: v => v+'M' }, min: 10, max: 13.5 },
+          y1: { position: 'right', grid: { display: false }, ticks: { color: '#D97706', font: { size: 10 }, stepSize: 1 }, min: 0, max: 3 }
+        }
+      }});
+  }
+}
+// ── CFO live refresh ──────────────────────────────────────────
+let cfoTick = 0;
+setInterval(() => {
+  cfoTick++;
+  if (curPage !== 'cfo') return;
+  const lt = document.getElementById('cfo-live-time');
+  if (lt) lt.textContent = new Date().toTimeString().slice(0,5);
+  const r = document.getElementById('cfo-runway');
+  if (r) r.textContent = (47 + Math.round(Math.sin(cfoTick) * 0.4)) + ' days';
+  const a = document.getElementById('cfo-acc');
+  if (a) a.textContent = (91.2 + Math.sin(cfoTick) * 0.3).toFixed(1) + '%';
+}, 60000);
+
+// ── Chat ──────────────────────────────────────────────────────
+const REPLIES = {
+  dash: {
+    eur:     'BofA EUR Reserve (****7712): €430K vs €500K minimum — €70K shortfall. With €120K AP due Friday, projected balance drops to €310K. Funding required before 15:00 CET today.',
+    exc:     '3 open exceptions: (1) BofA EUR Reserve below minimum — critical; (2) Barclays GBP stale 2 days; (3) AR 3 unmapped counterparties ~$140K understatement.',
+    forecast:'7-day forecast: $9.1M closing — improving. 30-day low $4.1M week 2 (payroll + tax + delayed AR). 60-day recovers to $7.8M.',
+    def:     'I can help with cash position, exceptions, forecast or recommendations. What would you like to know?'
+  },
+  fc: {
+    week2:   'Week 2 low of $4.1M driven by: payroll $780K (4 Jul), Q2 tax $280K (5 Jul), Customer A AR delayed to 7 Jul ($340K). GBP→USD transfer of $1.2M by Thursday would mitigate fully.',
+    variance:'Prior period variance –$340K: Customer A delayed 5 days (–$340K), offset by Vendor B early settlement (+$140K). Forecast accuracy 91.2%.',
+    def:     'I can answer forecast questions, explain variance drivers, or model scenarios.'
+  },
+  cfo: {
+    email:   '<strong>Draft subject:</strong> Daily Cash Report — 26 Jun 2026 — Action Required<br><br>Total Cash: $12.84M (Normal). 7-Day Forecast: $9.1M (improving). <strong>ACTION:</strong> EU Entity EUR funding required before 15:00 CET today. Finance Director approval needed. Full report attached.',
+    eu:      'EU Entity risk: BofA EUR Reserve (****7712) €430K vs €500K minimum — €70K shortfall. With €120K AP due Friday balance drops to €310K. Options: (1) Intercompany EUR transfer, (2) FX from HSBC GBP Pool before 15:00 CET.',
+    yest:    'vs Yesterday: Total cash ▲ +$340K (+2.7%). US HQ +$240K (AR collections). UK Ops +£80K. EU Entity unchanged at €430K. Risk score improved 3→2.',
+    def:     'I can answer questions about the CFO report, draft communications, or explain any section.'
+  },
+  briefing: {
+    precedent: 'Last EUR threshold breach was 14 Mar 2026 — resolved same-day via FX transfer from the GBP pool, completed before the 15:00 CET cut-off. Same playbook applies today.',
+    customera: 'Customer A has now delayed payment in 2 of the last 3 months (Apr: 4 days, Jun: 5 days). Worth a conversation with sales/AR if this becomes a 3rd consecutive occurrence next month.',
+    outlook:   'If the EUR funding completes today and Customer A pays within its typical delay window, cash stays in Normal range through next week. The only open watch item is whether Barclays connectivity self-resolves over the weekend.',
+    def:       'I can walk through any item in today\'s briefing — the EUR funding, the Customer A pattern, or what to expect over the next 4 days.'
+  },
+  trends: {
+    concentration: 'Top 3 counterparties now represent 69% of AR risk, up from 58% in Q2 last year. Customer A alone has grown from 19% to 34% — that\'s the larger story behind the recent AR delays.',
+    yoy:       'YoY same-quarter: average cash position up 18.4% ($12.4M vs $10.5M), liquidity incidents down 56% (4 vs 9), forecast accuracy up 6.6 points (90.8% vs 84.2%). Materially stronger position than last year.',
+    creep:     'Three things have been quietly trending the wrong way without triggering alerts: EU Entity buffer eroding for 5 straight weeks, UK data confidence dipping 3 times this quarter, and AR forecast variance widening each of the last 3 months.',
+    signal:    'The highest-confidence pattern signal is Customer A\'s recurring delay — 3 of the last 4 months. If it continues into July, I\'d recommend excluding Customer A from high-confidence forecast assumptions until the pattern breaks.',
+    def:       'I can dig into any section — YoY comparison, the surprise ledger, concentration risk, or the pattern-based predictions.'
+  }
+};
+
+function getReply(page, msg) {
+  msg = msg.toLowerCase();
+  const r = REPLIES[page] || {};
+  if (page === 'dash') {
+    if (msg.includes('eur') || msg.includes('bof') || msg.includes('threshold') || msg.includes('reserve')) return r.eur;
+    if (msg.includes('exception') || msg.includes('alert') || msg.includes('warn')) return r.exc;
+    if (msg.includes('forecast') || msg.includes('7-day') || msg.includes('30')) return r.forecast;
+  }
+  if (page === 'fc') {
+    if (msg.includes('week') || msg.includes('low') || msg.includes('dip') || msg.includes('mitig')) return r.week2;
+    if (msg.includes('variance') || msg.includes('actual')) return r.variance;
+  }
+  if (page === 'cfo') {
+    if (msg.includes('email') || msg.includes('draft')) return r.email;
+    if (msg.includes('eu') || msg.includes('eur')) return r.eu;
+    if (msg.includes('yesterday') || msg.includes('changed') || msg.includes('vs')) return r.yest;
+  }
+  if (page === 'briefing') {
+    if (msg.includes('last time') || msg.includes('precedent') || msg.includes('before')) return r.precedent;
+    if (msg.includes('customer a') || msg.includes('pattern') || msg.includes('delay')) return r.customera;
+    if (msg.includes('outlook') || msg.includes('next week') || msg.includes('if nothing')) return r.outlook;
+  }
+  if (page === 'trends') {
+    if (msg.includes('concentration') || msg.includes('counterparty') || msg.includes('top 3')) return r.concentration;
+    if (msg.includes('yoy') || msg.includes('year') || msg.includes('last year')) return r.yoy;
+    if (msg.includes('creep') || msg.includes('quiet') || msg.includes('worse')) return r.creep;
+    if (msg.includes('signal') || msg.includes('predict') || msg.includes('pattern')) return r.signal;
+  }
+  return r.def || 'I can help with treasury queries. What would you like to know?';
+}
+
+function sendChat(page) {
+  const inputId = { dash: 'dash-in', fc: 'fc-in', cfo: 'cfo-in', briefing: 'briefing-in', trends: 'trends-in' }[page];
+  const msgsId  = { dash: 'dash-msgs', fc: 'fc-msgs', cfo: 'cfo-msgs', briefing: 'briefing-msgs', trends: 'trends-msgs' }[page];
+  const inp = document.getElementById(inputId);
+  const msgs = document.getElementById(msgsId);
+  if (!inp || !msgs) return;
+  const val = inp.value.trim();
+  if (!val) return;
+  inp.value = '';
+  const ts = new Date().toTimeString().slice(0,5);
+  const u = document.createElement('div');
+  u.className = 'cmsg user';
+  u.innerHTML = '<div class="cbubble">'+val+'</div><div class="cts">'+ts+'</div>';
+  msgs.appendChild(u);
+  msgs.scrollTop = msgs.scrollHeight;
+  setTimeout(() => {
+    const a = document.createElement('div');
+    a.className = 'cmsg agent';
+    a.innerHTML = '<div class="cbubble">'+getReply(page, val)+'</div><div class="cts">'+new Date().toTimeString().slice(0,5)+'</div>';
+    msgs.appendChild(a);
+    msgs.scrollTop = msgs.scrollHeight;
+  }, 650);
+}
+
+function cfoSug(q) {
+  const inp = document.getElementById('cfo-in');
+  if (inp) { inp.value = q; sendChat('cfo'); }
+}
+</script>
+</body>
+</html>
