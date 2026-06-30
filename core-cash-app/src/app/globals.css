@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+:root {
+  /* Core Cash design tokens — keep in sync with src/lib/theme.ts */
+  --bg-base: #F4F6FA;
+  --bg-surface: #FFFFFF;
+  --bg-elevated: #F8F9FC;
+  --bg-hover: #EEF1F7;
+
+  --blue: #0057D9;
+  --blue-light: #EBF2FF;
+  --blue-border: rgba(0, 87, 217, .2);
+
+  --green: #059669;
+  --green-light: #ECFDF5;
+  --green-border: rgba(5, 150, 105, .2);
+
+  --amber: #D97706;
+  --amber-light: #FFFBEB;
+  --amber-border: rgba(217, 119, 6, .22);
+
+  --red: #DC2626;
+  --red-light: #FEF2F2;
+  --red-border: rgba(220, 38, 38, .2);
+
+  --info: #0369A1;
+  --info-light: #F0F9FF;
+  --info-border: rgba(3, 105, 161, .2);
+
+  --text-1: #0F1728;
+  --text-2: #4B5675;
+  --text-muted: #9AA3B5;
+
+  --border-0: #E8ECF4;
+  --border-1: #D1D9EC;
+
+  --radius-sm: 5px;
+  --radius-md: 9px;
+  --radius-lg: 14px;
+
+  --shadow-card: 0 1px 3px rgba(15, 23, 40, .07), 0 0 0 1px var(--border-0);
+  --shadow-elevated: 0 4px 16px rgba(15, 23, 40, .1), 0 0 0 1px var(--border-0);
+
+  --sidebar-expanded: 220px;
+  --sidebar-collapsed: 52px;
+  --ai-panel-expanded: 356px;
+  --ai-panel-collapsed: 36px;
+  --topbar-height: 54px;
+}
+
+@theme inline {
+  --color-bg-base: var(--bg-base);
+  --color-bg-surface: var(--bg-surface);
+  --color-bg-elevated: var(--bg-elevated);
+  --color-bg-hover: var(--bg-hover);
+
+  --color-blue: var(--blue);
+  --color-blue-light: var(--blue-light);
+
+  --color-green: var(--green);
+  --color-green-light: var(--green-light);
+
+  --color-amber: var(--amber);
+  --color-amber-light: var(--amber-light);
+
+  --color-red: var(--red);
+  --color-red-light: var(--red-light);
+
+  --color-info: var(--info);
+  --color-info-light: var(--info-light);
+
+  --color-text-1: var(--text-1);
+  --color-text-2: var(--text-2);
+  --color-text-muted: var(--text-muted);
+
+  --color-border-0: var(--border-0);
+  --color-border-1: var(--border-1);
+
+  --font-ui: var(--font-inter), sans-serif;
+  --font-data: var(--font-jetbrains-mono), monospace;
+
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius-md);
+  --radius-lg: var(--radius-lg);
+}
+
+body {
+  background: var(--bg-base);
+  color: var(--text-1);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-1);
+  border-radius: 3px;
+}
+
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 rgba(5, 150, 105, .35);
+  }
+  50% {
+    opacity: .75;
+    box-shadow: 0 0 0 5px transparent;
+  }
+}
