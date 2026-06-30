@@ -349,3 +349,39 @@ export interface CfoData {
   miniBarTrend: { label: string; heightPct: number; tag?: string; good?: boolean }[];
   suggestedPrompts: CfoSuggestedPrompt[];
 }
+
+export interface BriefingPrecedent {
+  text: string;
+}
+
+export interface BriefingDayEntry {
+  id: string;
+  dateLabel: string;
+  isToday?: boolean;
+  text: string;
+  precedent?: BriefingPrecedent;
+}
+
+export interface BriefingOutlook {
+  label: string;
+  text: string;
+}
+
+export interface BriefingData {
+  asOf: string;
+  totalCashUsd: number;
+  liquidityStatus: RiskLevel;
+  openItemsCount: number;
+  windowLabel: string;
+  generatedAt: string;
+  windowRangeLabel: string;
+  behindUs: {
+    rangeLabel: string;
+    days: BriefingDayEntry[];
+  };
+  aheadOfUs: {
+    rangeLabel: string;
+    days: BriefingDayEntry[];
+    outlook: BriefingOutlook;
+  };
+}
