@@ -13,7 +13,7 @@ export function Sidebar() {
 
   return (
     <nav
-      className={`relative flex flex-shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-border-0 bg-bg-surface py-3.5 transition-[width] duration-200 ease-in-out ${
+      className={`print:hidden relative flex flex-shrink-0 flex-col gap-0.5 overflow-y-auto border-r border-border-0 bg-bg-surface py-3.5 transition-[width] duration-200 ease-in-out ${
         collapsed ? "w-[52px] overflow-visible" : "w-[220px]"
       }`}
     >

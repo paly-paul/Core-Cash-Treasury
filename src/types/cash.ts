@@ -274,3 +274,203 @@ export interface UploadsData {
   columnMapping: ColumnMappingState;
   accounts: AccountMasterRow[];
 }
+
+export interface InsightCard {
+  id: string;
+  label: string;
+  value: string;
+  badge: { tone: "green" | "amber" | "red" | "blue" | "muted"; label: string };
+  delta: string;
+  sub: string;
+}
+
+export interface CashTrendPoint {
+  label: string;
+  date: string;
+  amountUsd: number;
+}
+
+export interface CfoActionItem {
+  id: string;
+  num: number;
+  severity: "urgent" | "normal";
+  title: string;
+  what: string;
+  why: string;
+  when: string;
+  approvalOwner: string;
+  badgeLabel: string;
+}
+
+export interface CfoReportStat {
+  label: string;
+  value: string;
+}
+
+export interface CfoReportRow {
+  label: string;
+  value: string;
+  flagged?: boolean;
+}
+
+export interface CfoSourceReference {
+  label: string;
+  detail: string;
+}
+
+export interface CfoReportSections {
+  executiveSummary: string;
+  cashPosition: CfoReportRow[];
+  forecastOutlook: CfoReportRow[];
+  actionsRequired: CfoActionItem[];
+  varianceExplanation: { windowLabel: string; text: string };
+  dataCaveats: string;
+  sourceReferences: CfoSourceReference[];
+}
+
+export interface CfoSuggestedPrompt {
+  label: string;
+  message: string;
+}
+
+export interface CfoData {
+  asOf: string;
+  reportDate: string;
+  forecastVersion: string;
+  agentRunTime: string;
+  confidence: ConfidenceLevel;
+  totalCashUsd: number;
+  liquidityStatus: RiskLevel;
+  mgmtAttentionCount: number;
+  insights: InsightCard[];
+  cashTrend: CashTrendPoint[];
+  coverStats: CfoReportStat[];
+  sections: CfoReportSections;
+  miniBarTrend: { label: string; heightPct: number; tag?: string; good?: boolean }[];
+  suggestedPrompts: CfoSuggestedPrompt[];
+}
+
+export interface BriefingPrecedent {
+  text: string;
+}
+
+export interface BriefingDayEntry {
+  id: string;
+  dateLabel: string;
+  isToday?: boolean;
+  text: string;
+  precedent?: BriefingPrecedent;
+}
+
+export interface BriefingOutlook {
+  label: string;
+  text: string;
+}
+
+export interface BriefingData {
+  asOf: string;
+  totalCashUsd: number;
+  liquidityStatus: RiskLevel;
+  openItemsCount: number;
+  windowLabel: string;
+  generatedAt: string;
+  windowRangeLabel: string;
+  behindUs: {
+    rangeLabel: string;
+    days: BriefingDayEntry[];
+  };
+  aheadOfUs: {
+    rangeLabel: string;
+    days: BriefingDayEntry[];
+    outlook: BriefingOutlook;
+  };
+}
+
+export interface YoyComparisonCard {
+  id: string;
+  label: string;
+  thisValue: string;
+  lastValue: string;
+  delta: string;
+  favorable: boolean;
+}
+
+export interface BenchmarkRow {
+  id: string;
+  label: string;
+  fillPct: number;
+  markerPct: number;
+  barColor: "green" | "amber" | "blue";
+  value: string;
+  note: string;
+  noteTone: "green" | "amber";
+}
+
+export interface SixMonthPoint {
+  month: string;
+  cashUsd: number;
+  riskIncidents: number;
+}
+
+export interface LedgerEntry {
+  id: string;
+  month: string;
+  title: string;
+  description: string;
+  amountLabel: string;
+  tone: "red" | "green" | "amber";
+}
+
+export interface CreepItem {
+  id: string;
+  title: string;
+  description: string;
+  sparkline?: number[];
+}
+
+export interface ConcentrationRow {
+  id: string;
+  name: string;
+  pct: number;
+  color: "red" | "blue" | "muted";
+}
+
+export interface StressLine {
+  id: string;
+  text: string;
+}
+
+export interface CostOfCashCell {
+  id: string;
+  label: string;
+  value: string;
+  sub: string;
+  warn: boolean;
+}
+
+export interface TrendsData {
+  asOf: string;
+  totalCashUsd: number;
+  yoyCashDeltaPct: number;
+  sixMonthRiskEvents: number;
+  activeSignalsCount: number;
+  yoyComparisons: YoyComparisonCard[];
+  benchmarkRows: BenchmarkRow[];
+  sixMonthSeries: SixMonthPoint[];
+  surpriseLedger: LedgerEntry[];
+  creepItems: CreepItem[];
+  concentrationRows: ConcentrationRow[];
+  concentrationCallout: string;
+  stressLines: StressLine[];
+  costOfCash: CostOfCashCell[];
+}
+
+// Pattern-based signals are intentionally a separate type/fixture from
+// ForecastData — these are not forecast output, never share a shape or a
+// component with the forecast engine's cards (handoff.md: Trends §7).
+export interface PredictionSignal {
+  id: string;
+  text: string;
+  basis: string;
+  confidence: "lower" | "moderate" | "higher";
+}
