@@ -8,6 +8,7 @@ interface ChatMessage {
   role: "agent" | "user";
   text: string;
   time: string;
+  content?: ReactNode;
 }
 
 export function AppShell({
@@ -16,6 +17,7 @@ export function AppShell({
   aiPanelTitle,
   aiPanelMessages,
   aiPanelPrimaryView,
+  aiPanelSuggestedPrompts,
   children,
 }: {
   stats: TopbarStat[];
@@ -23,6 +25,7 @@ export function AppShell({
   aiPanelTitle: string;
   aiPanelMessages: ChatMessage[];
   aiPanelPrimaryView?: { label: string; content: ReactNode };
+  aiPanelSuggestedPrompts?: { label: string; message: string }[];
   children: ReactNode;
 }) {
   return (
@@ -30,8 +33,15 @@ export function AppShell({
       <Topbar stats={stats} asOf={asOf} />
       <div className="flex min-h-0">
         <Sidebar />
-        <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-bg-base p-5">{children}</main>
-        <AiPanel title={aiPanelTitle} initialMessages={aiPanelMessages} primaryView={aiPanelPrimaryView} />
+        <main className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto bg-bg-base p-5 print:overflow-visible print:h-auto print:p-0">
+          {children}
+        </main>
+        <AiPanel
+          title={aiPanelTitle}
+          initialMessages={aiPanelMessages}
+          primaryView={aiPanelPrimaryView}
+          suggestedPrompts={aiPanelSuggestedPrompts}
+        />
       </div>
     </div>
   );
