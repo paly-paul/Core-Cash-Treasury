@@ -8,11 +8,14 @@ import { CurrencyBreakdown } from "./_components/CurrencyBreakdown";
 import { AccountTable } from "./_components/AccountTable";
 import { LiquidityRiskSection } from "./_components/LiquidityRiskSection";
 import { ExceptionsPanel } from "./_components/ExceptionsPanel";
-import { useAppSelector } from "@/hooks/redux";
+import { useAppDispatch, useAppSelector } from "@/hooks/redux";
+import { markRecommendationReviewed } from "@/store/dashboardSlice";
 import { formatCompactCurrency } from "@/utils/format";
 
 export default function DashboardPage() {
+  const dispatch = useAppDispatch();
   const data = useAppSelector((s) => s.dashboard.data);
+  const reviewedRecommendationIds = useAppSelector((s) => s.dashboard.reviewedRecommendationIds);
 
   return (
     <AppShell
@@ -66,7 +69,11 @@ export default function DashboardPage() {
 
       <AccountTable entityGroups={data.entityGroups} />
 
-      <RecommendationCard recommendation={data.recommendation} />
+      <RecommendationCard
+        recommendation={data.recommendation}
+        reviewedAt={reviewedRecommendationIds[data.recommendation.id]}
+        onMarkReviewed={() => dispatch(markRecommendationReviewed(data.recommendation.id))}
+      />
 
       <LiquidityRiskSection
         riskScore={data.riskScore}

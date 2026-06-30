@@ -1,10 +1,18 @@
 import type { Recommendation } from "@/types/cash";
-import { ConfidencePill } from "./Badge";
+import { Badge, ConfidencePill } from "./Badge";
 import { Button } from "./Button";
 
 // Structural requirement (handoff.md §6): every recommendation must surface
 // Why / What / When / Control — never just free-text copy.
-export function RecommendationCard({ recommendation }: { recommendation: Recommendation }) {
+export function RecommendationCard({
+  recommendation,
+  reviewedAt,
+  onMarkReviewed,
+}: {
+  recommendation: Recommendation;
+  reviewedAt?: string;
+  onMarkReviewed?: () => void;
+}) {
   return (
     <div className="rounded-md border border-border-0 border-l-4 border-l-blue bg-bg-surface p-4 shadow-[var(--shadow-card)]">
       <div className="mb-2.5 flex items-center justify-between">
@@ -29,10 +37,14 @@ export function RecommendationCard({ recommendation }: { recommendation: Recomme
           {recommendation.agentLabel} · {recommendation.generatedAt} · Approval: {recommendation.approvalOwner} ·
           Cut-off: {recommendation.cutoff}
         </div>
-        <div className="flex gap-2">
-          <Button variant="ghost" className="text-[11px]">
-            ✓ Mark Reviewed
-          </Button>
+        <div className="flex items-center gap-2">
+          {reviewedAt ? (
+            <Badge tone="green">✓ Reviewed {new Date(reviewedAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</Badge>
+          ) : (
+            <Button variant="ghost" className="text-[11px]" onClick={onMarkReviewed}>
+              ✓ Mark Reviewed
+            </Button>
+          )}
           <Button variant="primary" className="text-[11px]">
             View Full Analysis →
           </Button>
