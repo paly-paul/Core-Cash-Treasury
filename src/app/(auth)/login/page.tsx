@@ -111,14 +111,14 @@ export default function LoginPage() {
           </Button>
         </form>
 
-        <div className="mt-5 rounded-[6px] border border-border-0 bg-bg-elevated px-3 py-2 text-[10.5px] text-text-muted">
+        {/* <div className="mt-5 rounded-[6px] border border-border-0 bg-bg-elevated px-3 py-2 text-[10.5px] text-text-muted">
           Demo credentials: <span className="font-data text-text-2">{MOCK_CREDENTIALS.email}</span> /{" "}
           <span className="font-data text-text-2">{MOCK_CREDENTIALS.password}</span>
-        </div>
+        </div> */}
 
-        <div className="mt-3 text-center text-[10px] text-text-muted">
+        {/* <div className="mt-3 text-center text-[10px] text-text-muted">
           Authentication is a UI stub — no real identity provider is connected yet.
-        </div>
+        </div> */}
       </div>
     </div>
   );
