@@ -385,3 +385,92 @@ export interface BriefingData {
     outlook: BriefingOutlook;
   };
 }
+
+export interface YoyComparisonCard {
+  id: string;
+  label: string;
+  thisValue: string;
+  lastValue: string;
+  delta: string;
+  favorable: boolean;
+}
+
+export interface BenchmarkRow {
+  id: string;
+  label: string;
+  fillPct: number;
+  markerPct: number;
+  barColor: "green" | "amber" | "blue";
+  value: string;
+  note: string;
+  noteTone: "green" | "amber";
+}
+
+export interface SixMonthPoint {
+  month: string;
+  cashUsd: number;
+  riskIncidents: number;
+}
+
+export interface LedgerEntry {
+  id: string;
+  month: string;
+  title: string;
+  description: string;
+  amountLabel: string;
+  tone: "red" | "green" | "amber";
+}
+
+export interface CreepItem {
+  id: string;
+  title: string;
+  description: string;
+  sparkline?: number[];
+}
+
+export interface ConcentrationRow {
+  id: string;
+  name: string;
+  pct: number;
+  color: "red" | "blue" | "muted";
+}
+
+export interface StressLine {
+  id: string;
+  text: string;
+}
+
+export interface CostOfCashCell {
+  id: string;
+  label: string;
+  value: string;
+  sub: string;
+  warn: boolean;
+}
+
+export interface TrendsData {
+  asOf: string;
+  totalCashUsd: number;
+  yoyCashDeltaPct: number;
+  sixMonthRiskEvents: number;
+  activeSignalsCount: number;
+  yoyComparisons: YoyComparisonCard[];
+  benchmarkRows: BenchmarkRow[];
+  sixMonthSeries: SixMonthPoint[];
+  surpriseLedger: LedgerEntry[];
+  creepItems: CreepItem[];
+  concentrationRows: ConcentrationRow[];
+  concentrationCallout: string;
+  stressLines: StressLine[];
+  costOfCash: CostOfCashCell[];
+}
+
+// Pattern-based signals are intentionally a separate type/fixture from
+// ForecastData — these are not forecast output, never share a shape or a
+// component with the forecast engine's cards (handoff.md: Trends §7).
+export interface PredictionSignal {
+  id: string;
+  text: string;
+  basis: string;
+  confidence: "lower" | "moderate" | "higher";
+}

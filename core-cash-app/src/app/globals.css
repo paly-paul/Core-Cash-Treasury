@@ -27,6 +27,10 @@
   --info-light: #F0F9FF;
   --info-border: rgba(3, 105, 161, .2);
 
+  --violet: #7C3AED;
+  --violet-light: #F5F3FF;
+  --violet-border: rgba(124, 58, 237, .22);
+
   --text-1: #0F1728;
   --text-2: #4B5675;
   --text-muted: #9AA3B5;
@@ -68,6 +72,9 @@
 
   --color-info: var(--info);
   --color-info-light: var(--info-light);
+
+  --color-violet: var(--violet);
+  --color-violet-light: var(--violet-light);
 
   --color-text-1: var(--text-1);
   --color-text-2: var(--text-2);
