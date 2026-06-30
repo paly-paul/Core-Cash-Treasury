@@ -185,3 +185,92 @@ export interface NewAssumptionInput {
   category: string;
   confidence: ConfidenceLevel;
 }
+
+export type UploadZoneKind = "bank" | "ar" | "ap" | "manual";
+
+export type UploadFileStatus = "valid" | "warning" | "error";
+
+export interface UploadZoneState {
+  kind: UploadZoneKind;
+  title: string;
+  icon: string;
+  iconBg: string;
+  helpText: string;
+  templateLabel: string;
+  status: UploadFileStatus;
+  fileName: string;
+  statusNote: string;
+}
+
+export interface RecentUpload {
+  id: string;
+  fileName: string;
+  sourceFormat: string;
+  sizeLabel: string;
+  uploadedBy: string;
+  timestamp: string;
+  status: UploadFileStatus;
+  detail: string;
+}
+
+export interface MappingPreviewRow {
+  id: string;
+  values: string[];
+  unmapped: boolean;
+}
+
+export interface FieldMapping {
+  id: string;
+  sourceColumn: string;
+  systemField: string;
+  mandatory: boolean;
+  mapped: boolean;
+}
+
+export interface ColumnMappingState {
+  fileName: string;
+  templateName: string;
+  previewColumns: string[];
+  previewRows: MappingPreviewRow[];
+  fieldMappings: FieldMapping[];
+}
+
+export interface AccountMasterRow {
+  id: string;
+  accountNumber: string;
+  accountName: string;
+  bank: string;
+  entity: string;
+  currency: Currency;
+  active: boolean;
+  minThreshold: number | null;
+  frequency: string;
+  status: "active" | "restricted" | "stale" | "below-min";
+  restricted: boolean;
+  includeInCashPosition: boolean;
+}
+
+export interface NewAccountInput {
+  accountNumber: string;
+  accountName: string;
+  bank: string;
+  entity: string;
+  currency: Currency;
+  minThreshold: number | null;
+  includeInCashPosition: boolean;
+  restricted: boolean;
+}
+
+export interface UploadsData {
+  asOf: string;
+  totalCashUsd: number;
+  lastUploadTime: string;
+  pendingReviewCount: number;
+  uploadStatsToday: number;
+  uploadStatsWeek: number;
+  uploadStatsErrors: number;
+  uploadZones: UploadZoneState[];
+  recentUploads: RecentUpload[];
+  columnMapping: ColumnMappingState;
+  accounts: AccountMasterRow[];
+}
